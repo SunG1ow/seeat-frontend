@@ -1,0 +1,62 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.app-header .container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 16px;
+}
+
+.app-header .logo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.28);
+}
+
+.app-main {
+  flex: 1;
+  padding-block: 40px;
+}
+
+.token-swatches {
+  display: flex;
+  gap: var(--layout-grid-gap);
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.token-swatch {
+  width: 160px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.token-swatch .chip {
+  height: 64px;
+}
+
+.token-swatch .label {
+  padding: 10px 12px;
+}
+
+.token-swatch .name {
+  font-weight: var(--fw-title2);
+}
+
+.token-swatch .code {
+  color: var(--color-text-muted);
+}
