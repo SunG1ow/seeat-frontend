@@ -1,0 +1,131 @@
+/* ============================================================
+   Login — SEEAT-_3.HTM #screen-login 구조 참고
+   (.tabs / .login-box / .card-panel / .form-field / .btn)
+   ============================================================ */
+
+.login {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.login__title {
+  margin-bottom: 4px;
+}
+
+.login__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.login__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.login__tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.login__tab {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.login__tab--active {
+  color: var(--color-primary);
+  border-color: var(--color-secondary);
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login__field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.login__field input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+/* §4.3.2 Focus: Aqua Blue 테두리 두께 2px 확장 */
+.login__field input:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.login__submit {
+  margin-top: 16px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+}
+
+.login__submit--primary {
+  background: var(--color-secondary);
+}
+
+.login__submit--primary:hover {
+  background: var(--color-secondary-hover);
+}
+
+.login__submit--coral {
+  background: var(--color-accent);
+}
+
+.login__submit--coral:hover {
+  background: var(--color-accent-hover);
+}
+
+.login__submit--outline {
+  background: #fff;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.login__submit--outline:hover {
+  background: var(--color-background);
+}
+
+.login__signup-hint {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin-top: 16px;
+}
+
+.login__signup-link {
+  color: var(--color-secondary-hover);
+  font-weight: 700;
+  cursor: pointer;
+}

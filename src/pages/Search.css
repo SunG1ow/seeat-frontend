@@ -1,0 +1,153 @@
+/* ============================================================
+   Search — SEEAT-_3.HTM #screen-search 구조/CSS 참고
+   (.search-layout / .filter-panel / .chip-list / .toolbar / .grid)
+   ============================================================ */
+
+.search__title {
+  margin-bottom: 4px;
+}
+
+.search__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+/* §4.2.1: 1280px 최소 해상도 기준 2컬럼(좌측 230px 고정 + 우측 1fr) */
+.search__layout {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: var(--layout-grid-gap);
+  align-items: start;
+}
+
+.search__filter-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: 88px;
+}
+
+.search__filter-group h4 {
+  margin: 0 0 10px;
+  color: var(--color-primary-hover);
+  font-weight: 800;
+}
+
+.search__chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.search__chip {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: var(--radius-pill);
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.search__chip--selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.search__filter-panel select,
+.search__filter-panel input[type='number'] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font-size: 13px;
+}
+
+.search__range-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.search__btn {
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  width: 100%;
+}
+
+.search__btn--primary {
+  background: var(--color-secondary);
+  color: #fff;
+}
+
+.search__btn--primary:hover {
+  background: var(--color-secondary-hover);
+}
+
+.search__btn--outline {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.search__btn--outline:hover {
+  background: var(--color-background);
+}
+
+.search__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.search__result-count {
+  color: var(--color-text-muted);
+}
+
+.search__result-count b {
+  color: var(--color-text);
+}
+
+.search__sort-select {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font-size: 12.5px;
+}
+
+/* 검색 화면용 4컬럼(폭 기반 auto-fill) 상품 카드 그리드 */
+.search__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--layout-grid-gap);
+}
+
+.search__empty {
+  color: var(--color-text-muted);
+  padding: 30px;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.search__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}

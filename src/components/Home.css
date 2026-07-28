@@ -1,0 +1,83 @@
+/* ============================================================
+   Home — 디자인 초기안 v1.4 §4.3.1 (홈 화면용 3컬럼 상품 카드 캐러셀)
+   구조/스크롤 동작은 SEEAT-_3.HTM 프로토타입의
+   .carousel-row / .carousel-viewport / .carousel-track / .carousel-arrow 를 그대로 참고했다.
+   ============================================================ */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.home__section-head {
+  margin-bottom: 18px;
+}
+
+.home__section-sub {
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.home__carousel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home__carousel-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.home__carousel-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.home__carousel-track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--layout-grid-gap);
+}
+
+/* 3컬럼 배치: 뷰포트 폭에서 카드 3장이 한 줄에 보이도록 flex-basis를 계산한다 */
+.home__carousel-track .product-card {
+  flex: 0 0 calc((100% - 2 * var(--layout-grid-gap)) / 3);
+  min-width: 260px;
+}
+
+.home__carousel-arrow {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: var(--shadow);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home__carousel-arrow:hover {
+  background: var(--color-background);
+}
+
+.home__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
