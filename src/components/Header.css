@@ -1,7 +1,6 @@
 /* ============================================================
    Header (GNB) — 디자인 초기안 v1.4 §4.1.1 컬러 팔레트 / §4.2.2 GNB
-   판매자 모드 활성화 시 배경이 Primary(Deep Ocean Blue) -> Seller Theme
-   (Deep Mud Brown, --color-seller-theme)으로 전환되어 구매자 모드와 구분된다.
+   구매자/판매자 모드와 관계없이 Primary(Deep Ocean Blue)로 브랜드 컬러를 통일한다.
    ============================================================ */
 
 .topbar {
@@ -12,10 +11,6 @@
   color: #fff;
   box-shadow: var(--shadow);
   transition: background-color 0.2s ease;
-}
-
-.topbar--seller {
-  background: var(--color-seller-theme);
 }
 
 .ticker {
