@@ -28,11 +28,14 @@ export interface Order {
   claimType?: ClaimType
   claimReason?: string
   claimRejectReason?: string
+  // 배송 완료 후 구매자가 구매를 확정했는지 여부('구매 확정'). 판매자가 아닌
+  // 구매자만 전환할 수 있는 상태이므로 advanceOrderStage와는 별개로 관리한다
+  confirmed: boolean
 }
 
 interface OrdersContextValue {
   orders: Order[]
-  addOrder: (order: Omit<Order, 'id' | 'claimStatus'>) => void
+  addOrder: (order: Omit<Order, 'id' | 'claimStatus' | 'confirmed'>) => void
   advanceOrderStage: (id: number) => void
   setTrackingInfo: (id: number, trackingCompany: string, trackingNumber: string) => void
   approveClaim: (id: number) => void
@@ -51,6 +54,7 @@ function buildInitialOrders(): Order[] {
       amount: 73500,
       stage: 3,
       claimStatus: 'none',
+      confirmed: true,
     },
     {
       id: 2,
@@ -59,6 +63,7 @@ function buildInitialOrders(): Order[] {
       amount: 38000,
       stage: 3,
       claimStatus: 'none',
+      confirmed: false,
     },
     {
       id: 3,
@@ -69,6 +74,7 @@ function buildInitialOrders(): Order[] {
       trackingCompany: 'CJ대한통운',
       trackingNumber: '1234567890',
       claimStatus: 'none',
+      confirmed: false,
     },
     {
       id: 4,
@@ -77,6 +83,7 @@ function buildInitialOrders(): Order[] {
       amount: 22000,
       stage: 1,
       claimStatus: 'none',
+      confirmed: false,
     },
     {
       id: 5,
@@ -87,6 +94,7 @@ function buildInitialOrders(): Order[] {
       claimStatus: 'requested',
       claimType: 'refund',
       claimReason: '단순 변심으로 환불을 요청합니다',
+      confirmed: false,
     },
   ]
 }
@@ -100,7 +108,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       orders,
       addOrder: (order) => {
         setOrders((prev) => [
-          { ...order, id: nextOrderId.current++, claimStatus: 'none' },
+          { ...order, id: nextOrderId.current++, claimStatus: 'none', confirmed: false },
           ...prev,
         ])
       },

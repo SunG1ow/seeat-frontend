@@ -23,6 +23,7 @@ const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'manage', label: '상품관리' },
   { id: 'order-management', label: '주문관리', path: '/seller/orders' },
   { id: 'shipping-management', label: '배송/클레임 관리', path: '/seller/shipping' },
+  { id: 'settlement-management', label: '정산 관리', path: '/seller/settlement' },
 ]
 
 const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항' }
