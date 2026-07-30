@@ -80,7 +80,7 @@ function Header() {
             </button>
           ) : (
             <>
-              <button type="button" className="link-btn">
+              <button type="button" className="link-btn" onClick={() => navigate('/signup')}>
                 회원가입
               </button>
               <Link to="/login" className="link-btn">
