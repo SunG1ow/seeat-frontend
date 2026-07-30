@@ -39,7 +39,7 @@
   margin: 2px 0 10px;
 }
 
-/* 결제완료 → 배송준비중 → 배송중 → 배송완료 → 구매확정 라인형 단계 UI (§4.3.3) */
+/* 결제 완료 → 상품 준비중 → 배송중 → 배송 완료 라인형 단계 UI (§4.3.3) */
 .orders__track {
   display: flex;
   justify-content: space-between;
