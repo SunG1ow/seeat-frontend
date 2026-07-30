@@ -7,6 +7,7 @@ import Search from './pages/Search'
 import Detail from './pages/Detail'
 import MyPage from './pages/MyPage'
 import Orders from './pages/Orders'
+import SettlementManagement from './pages/SettlementManagement'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/product/:id" element={<Detail />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/seller/settlement" element={<SettlementManagement />} />
           </Routes>
         </div>
       </main>

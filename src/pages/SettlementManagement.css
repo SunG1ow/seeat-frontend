@@ -1,0 +1,113 @@
+/* ============================================================
+   SettlementManagement — 판매자 전용 정산 및 매출 조회 (Strictly Read-only)
+   ============================================================ */
+
+.settlement__title {
+  margin-bottom: 4px;
+}
+
+.settlement__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.settlement__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* ---- 매출 요약 대시보드 ---- */
+.settlement__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--layout-grid-gap);
+  margin-bottom: 28px;
+}
+
+.settlement__summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.settlement__summary-label {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.settlement__summary-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.settlement__summary-value--done {
+  color: var(--color-success);
+}
+
+.settlement__summary-value--pending {
+  color: var(--color-warning);
+}
+
+/* ---- 정산 내역 테이블 ---- */
+.settlement__table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.settlement__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.settlement__table th,
+.settlement__table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--fs-body2);
+}
+
+.settlement__table thead th {
+  background: #f5f8fb;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+.settlement__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.settlement__table tbody tr:hover {
+  background: var(--color-background);
+}
+
+.settlement__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settlement__badge--done {
+  background: rgba(31, 170, 109, 0.12);
+  color: var(--color-success);
+}
+
+.settlement__badge--pending {
+  background: rgba(180, 114, 11, 0.12);
+  color: var(--color-warning);
+}
