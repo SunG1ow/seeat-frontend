@@ -1,0 +1,332 @@
+/* ============================================================
+   ProductRegistration — 판매자 전용 수산물 상품 등록 화면
+   Login/Detail/MyPage와 동일한 패널·모달 토큰을 재사용한다.
+   ============================================================ */
+
+.register {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.register__title {
+  margin-bottom: 4px;
+}
+
+.register__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.register__layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.register__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.register__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.register__grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.register__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.register__section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.register__section select,
+.register__section input[type='text'],
+.register__section input[type='number'] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+.register__section select:focus,
+.register__section input:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.register__readonly {
+  background: var(--color-background) !important;
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.register__inline-fields {
+  display: flex;
+  gap: 10px;
+}
+
+.register__inline-fields input {
+  flex: 1;
+}
+
+.register__inline-fields select {
+  flex: 1;
+}
+
+.register__radio-row {
+  display: flex;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  background: #fbfcfe;
+}
+
+.register__radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.register__field-hint {
+  color: var(--color-text-muted);
+}
+
+.register__field-warning {
+  color: var(--color-danger);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* 가공 금지 안내 박스 — 선택 불가능한 정적 경고 영역 */
+.register__notice {
+  background: #fff7ed;
+  border: 1px solid #f3d9ae;
+  border-radius: var(--radius-input);
+  padding: 14px 16px;
+}
+
+.register__notice .register__section-title {
+  color: var(--color-warning);
+}
+
+.register__image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.register__image-thumb {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-input);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.register__image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.register__image-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(22, 32, 43, 0.65);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.register__image-add {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-input);
+  border: 1px dashed var(--color-border-input-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+  background: #fbfcfe;
+}
+
+.register__image-add:hover {
+  background: var(--color-background);
+}
+
+.register__error {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.register__submit {
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 13px 14px;
+  font-weight: 700;
+  font-size: 14.5px;
+  color: #fff;
+  background: var(--color-accent);
+}
+
+.register__submit:hover {
+  background: var(--color-accent-hover);
+}
+
+.register__denied {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.register__denied button {
+  align-self: center;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 10px 18px;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ---- 최종 서약 모달 (MyPage 결제 확인 모달과 동일한 토큰) ---- */
+.register__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.register__modal {
+  width: 420px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.register__modal-title {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.register__modal-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0 0 14px;
+}
+
+.register__pledge-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-input);
+  margin-bottom: 16px;
+}
+
+.register__pledge-check input {
+  margin-top: 3px;
+}
+
+.register__modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.register__modal-btn {
+  flex: 1;
+  border-radius: var(--radius-input);
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.register__modal-btn--cancel {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.register__modal-btn--cancel:hover {
+  background: var(--color-background);
+}
+
+.register__modal-btn--confirm {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.register__modal-btn--confirm:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.register__modal-btn--confirm:disabled {
+  background: #d8dde4;
+  color: #8b96a3;
+  cursor: not-allowed;
+}
+
+.register__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}

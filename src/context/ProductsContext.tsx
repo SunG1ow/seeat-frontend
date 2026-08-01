@@ -1,5 +1,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { Product, SellerListingStatus } from '../components/ProductCard'
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { Product } from '../components/ProductCard'
 import { buildInitialProducts } from '../data/products'
 
 // ProductManagement.tsx(상품관리 화면)에서 수정 가능한 필드만 담는 타입.
@@ -19,12 +21,15 @@ interface ProductsContextValue {
   purchase: (id: number, qty: number) => boolean
   /** 판매자 상품관리(ProductManagement) 화면 전용 — 가격/재고/판매상태만 수정 가능 */
   updateProduct: (id: number, patch: Partial<ProductEditableFields>) => void
+  /** 판매자 상품 등록(ProductRegistration) 화면에서 신규 등록 시 사용. 생성된 id를 반환한다 */
+  addProduct: (input: Omit<Product, 'id'>) => number
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null)
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(buildInitialProducts)
+  const nextProductId = useRef(1000)
 
   const value = useMemo<ProductsContextValue>(
     () => ({
@@ -38,7 +43,10 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       },
       updateProduct: (id, patch) => {
         setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-      },
+      addProduct: (input) => {
+        const id = nextProductId.current++
+        setProducts((prev) => [...prev, { ...input, id }])
+        return id },
     }),
     [products],
   )
