@@ -4,33 +4,50 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 // 로그인 화면(Login.tsx)에서 선택한 계정 유형으로 로그인 시 결정된다.
 export type UserRole = 'buyer' | 'seller' | 'admin'
 
+// 판매자 자격 검증 방식: 사업자등록번호(국세청 연동 가정) 또는
+// 어선원부 번호 + 조업허가증 서류(무등록 소규모 어민 대상)
+export type SellerVerificationType = 'business' | 'vessel'
+
+export interface SellerVerification {
+  type: SellerVerificationType
+  businessRegNumber?: string
+  vesselRegNumber?: string
+  permitFileName?: string
+}
+
+export interface AuthUser {
+  email: string
+  name: string
+  role: UserRole
+  sellerVerification?: SellerVerification
+}
+
 interface AuthContextValue {
   role: UserRole
   isAuthenticated: boolean
-  login: (role: UserRole) => void
+  user: AuthUser | null
+  login: (user: AuthUser) => void
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<UserRole>('buyer')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<AuthUser | null>(null)
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      role,
-      isAuthenticated,
-      login: (nextRole) => {
-        setRole(nextRole)
-        setIsAuthenticated(true)
+      role: user?.role ?? 'buyer',
+      isAuthenticated: user !== null,
+      user,
+      login: (nextUser) => {
+        setUser(nextUser)
       },
       logout: () => {
-        setRole('buyer')
-        setIsAuthenticated(false)
+        setUser(null)
       },
     }),
-    [role, isAuthenticated],
+    [user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

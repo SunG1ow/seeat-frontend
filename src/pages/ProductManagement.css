@@ -1,0 +1,275 @@
+/* ============================================================
+   ProductManagement — 판매자 전용 수산물 상품 관리 화면
+   Login/Detail/MyPage/ProductRegistration과 동일한 패널·모달 토큰을 재사용한다.
+   ============================================================ */
+
+.manage__title {
+  margin-bottom: 4px;
+}
+
+.manage__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.manage__empty {
+  color: var(--color-text-muted);
+  padding: 40px;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.manage__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--layout-grid-gap);
+}
+
+.manage__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.manage__card-head {
+  display: flex;
+  gap: 12px;
+}
+
+.manage__thumb {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #dceef0, #c7e4e6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: var(--color-secondary-hover);
+}
+
+.manage__card-meta {
+  color: var(--color-text-muted);
+  font-weight: var(--fw-body2);
+}
+
+.manage__card-origin {
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.manage__stat-row {
+  display: flex;
+  gap: 22px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.manage__stat-label {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.manage__stat-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.manage__status-row {
+  display: flex;
+  gap: 6px;
+}
+
+.manage__status-btn {
+  flex: 1;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-input);
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.manage__status-btn:hover {
+  background: var(--color-background);
+}
+
+.manage__status-btn--active.manage__status-btn--onsale {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #fff;
+}
+
+.manage__status-btn--active.manage__status-btn--soldout {
+  background: var(--color-text-muted);
+  border-color: var(--color-text-muted);
+  color: #fff;
+}
+
+.manage__status-btn--active.manage__status-btn--suspended {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.manage__edit-btn {
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.manage__edit-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.manage__denied {
+  max-width: 480px;
+  margin: 60px auto;
+  text-align: center;
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.manage__denied button {
+  align-self: center;
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 10px 18px;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+/* ---- 수정 모달 (Register/MyPage 모달과 동일한 토큰) ---- */
+.manage__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.manage__modal {
+  width: 420px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manage__modal-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.manage__modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manage__modal-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.manage__modal-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+.manage__modal-field input:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.manage__modal-field input:disabled {
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.manage__modal-hint {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.manage__modal-error {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.manage__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.manage__modal-btn {
+  flex: 1;
+  border-radius: var(--radius-input);
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.manage__modal-btn--cancel {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.manage__modal-btn--cancel:hover {
+  background: var(--color-background);
+}
+
+.manage__modal-btn--confirm {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.manage__modal-btn--confirm:hover {
+  background: var(--color-accent-hover);
+}
+
+.manage__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
