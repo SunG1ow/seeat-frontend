@@ -1,7 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import type { Product, SellerListingStatus } from '../components/ProductCard'
 import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { Product } from '../components/ProductCard'
+import type { Product, SellerListingStatus } from '../components/ProductCard'
 import { buildInitialProducts } from '../data/products'
 
 // ProductManagement.tsx(상품관리 화면)에서 수정 가능한 필드만 담는 타입.
@@ -43,10 +41,12 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       },
       updateProduct: (id, patch) => {
         setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+      },
       addProduct: (input) => {
         const id = nextProductId.current++
         setProducts((prev) => [...prev, { ...input, id }])
-        return id },
+        return id
+      },
     }),
     [products],
   )
