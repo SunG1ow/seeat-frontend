@@ -19,7 +19,7 @@ const COMMON_NAV: NavItem[] = [
 ]
 
 const SELLER_ONLY_NAV: NavItem[] = [
-  { id: 'register', label: '상품등록' },
+  { id: 'register', label: '상품등록', path: '/register' },
   { id: 'manage', label: '상품관리' },
 ]
 
