@@ -3,6 +3,7 @@ import './App.css'
 import Header from './components/Header'
 import Home from './components/Home'
 import Login from './pages/Login'
+import AuthAndProfile from './pages/AuthAndProfile'
 import Search from './pages/Search'
 import Detail from './pages/Detail'
 import MyPage from './pages/MyPage'
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<AuthAndProfile />} />
             <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<Detail />} />
             <Route path="/mypage" element={<MyPage />} />
