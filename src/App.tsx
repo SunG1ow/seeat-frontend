@@ -8,6 +8,7 @@ import Search from './pages/Search'
 import Detail from './pages/Detail'
 import MyPage from './pages/MyPage'
 import Orders from './pages/Orders'
+import ProductManagement from './pages/ProductManagement'
 import ProductRegistration from './pages/ProductRegistration'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
             <Route path="/product/:id" element={<Detail />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/manage" element={<ProductManagement />} />
             <Route path="/register" element={<ProductRegistration />} />
           </Routes>
         </div>
