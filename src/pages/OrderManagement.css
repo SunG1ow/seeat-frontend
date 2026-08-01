@@ -1,0 +1,99 @@
+/* ============================================================
+   OrderManagement — 판매자 전용 주문 내역 관리 화면
+   ============================================================ */
+
+.order-mgmt__title {
+  margin-bottom: 4px;
+}
+
+.order-mgmt__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.order-mgmt__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.order-mgmt__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.order-mgmt__table th,
+.order-mgmt__table td {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.order-mgmt__table th {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--color-background);
+}
+
+.order-mgmt__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.order-mgmt__badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  background: #eaedf2;
+  color: var(--color-text-muted);
+}
+
+.order-mgmt__badge--stage0 {
+  background: #eef2ff;
+  color: var(--color-primary);
+}
+
+.order-mgmt__badge--stage1 {
+  background: #fff3e6;
+  color: var(--color-warning);
+}
+
+.order-mgmt__badge--stage2 {
+  background: #e6f7fb;
+  color: var(--color-secondary-hover);
+}
+
+.order-mgmt__badge--stage3 {
+  background: #e8f8f0;
+  color: var(--color-success);
+}
+
+.order-mgmt__advance-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.order-mgmt__advance-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.order-mgmt__advance-btn:disabled {
+  background: #eaedf2;
+  color: var(--color-text-muted);
+  cursor: default;
+}
