@@ -9,6 +9,7 @@ import Detail from './pages/Detail'
 import MyPage from './pages/MyPage'
 import Orders from './pages/Orders'
 import OrderManagement from './pages/OrderManagement'
+import ShippingManagement from './pages/ShippingManagement'
 import ProductManagement from './pages/ProductManagement'
 import ProductRegistration from './pages/ProductRegistration'
 
@@ -28,6 +29,7 @@ function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/seller/orders" element={<OrderManagement />} />
+            <Route path="/seller/shipping" element={<ShippingManagement />} />
             <Route path="/manage" element={<ProductManagement />} />
             <Route path="/register" element={<ProductRegistration />} />
           </Routes>
