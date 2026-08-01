@@ -1,0 +1,104 @@
+/* ============================================================
+   Orders — SEEAT-_3.HTM #screen-orders / .timeline / .order-track 참고
+   ============================================================ */
+
+.orders__title {
+  margin-bottom: 4px;
+}
+
+.orders__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.orders__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.orders__timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.orders__item {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.orders__item-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.orders__item-date {
+  color: var(--color-text-muted);
+  margin: 2px 0 10px;
+}
+
+/* 결제완료 → 배송준비중 → 배송중 → 배송완료 → 구매확정 라인형 단계 UI (§4.3.3) */
+.orders__track {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0 4px;
+  position: relative;
+}
+
+.orders__track::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--color-border);
+  z-index: 0;
+}
+
+.orders__step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+}
+
+.orders__dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #eaedf2;
+  border: 2px solid #eaedf2;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.orders__step--done .orders__dot {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+.orders__step--now .orders__dot {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.orders__label {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  text-align: center;
+}
+
+.orders__step--done .orders__label,
+.orders__step--now .orders__label {
+  color: var(--color-text);
+}

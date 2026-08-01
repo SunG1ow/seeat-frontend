@@ -1,0 +1,128 @@
+/* ============================================================
+   Header (GNB) — 디자인 초기안 v1.4 §4.1.1 컬러 팔레트 / §4.2.2 GNB
+   판매자 모드 활성화 시 배경이 Primary(Deep Ocean Blue) -> Seller Theme
+   (Deep Mud Brown, --color-seller-theme)으로 전환되어 구매자 모드와 구분된다.
+   ============================================================ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--color-primary);
+  color: #fff;
+  box-shadow: var(--shadow);
+  transition: background-color 0.2s ease;
+}
+
+.topbar--seller {
+  background: var(--color-seller-theme);
+}
+
+.ticker {
+  background: rgba(0, 0, 0, 0.18);
+  color: #bfefef;
+  font-size: var(--fs-caption);
+  padding: 6px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ticker-track {
+  display: inline-block;
+  padding-left: 100%;
+  animation: header-ticker 26s linear infinite;
+}
+
+@keyframes header-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-block: 12px;
+}
+
+.logo {
+  font-weight: var(--fw-title1);
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+
+.logo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(0, 163, 196, 0.28);
+  flex-shrink: 0;
+}
+
+.mainnav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.mainnav button,
+.mainnav a {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: #c7d3e3;
+  font-size: var(--fs-body2);
+  font-weight: 600;
+  padding: 9px 12px;
+  border-radius: 8px;
+  transition: 0.15s;
+}
+
+.mainnav button:hover,
+.mainnav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.mainnav button.active,
+.mainnav a.active {
+  background: var(--color-secondary);
+  color: #fff;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  padding: 0 12px;
+  height: 36px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.link-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
