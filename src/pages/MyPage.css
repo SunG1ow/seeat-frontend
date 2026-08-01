@@ -153,6 +153,65 @@
   background: var(--color-accent-hover);
 }
 
+/* ---- 정보수정: 계정 정보 + 회원 탈퇴 ---- */
+.mypage__account {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mypage__account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.mypage__account-row {
+  display: flex;
+  gap: 10px;
+}
+
+.mypage__account-label {
+  width: 90px;
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.mypage__withdraw-block {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mypage__withdraw-btn {
+  border: 1px solid var(--color-danger);
+  background: #fff;
+  color: var(--color-danger);
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.mypage__withdraw-btn:hover {
+  background: #fdeceb;
+}
+
+.mypage__modal-notice {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 0 4px;
+}
+
+.mypage__modal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* ---- 결제 확인 모달: 환불 불가 / 재고 잠금 필수 안내 ---- */
 .mypage__modal-overlay {
   position: fixed;

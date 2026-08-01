@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth, type UserRole } from '../context/AuthContext'
+import { useAuth, type AuthUser, type UserRole } from '../context/AuthContext'
 import './Login.css'
 
 // SEEAT-_3.HTM #screen-login 의 .login-tab 구조 참고 (구매자/판매자/관리자 탭 전환)
@@ -15,8 +15,22 @@ function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  function handleLogin(role: UserRole) {
-    login(role)
+  const [buyerEmail, setBuyerEmail] = useState('')
+  const [buyerPassword, setBuyerPassword] = useState('')
+
+  const [coopName, setCoopName] = useState('')
+  const [sellerBizNumber, setSellerBizNumber] = useState('')
+  const [sellerEmail, setSellerEmail] = useState('')
+  const [sellerPassword, setSellerPassword] = useState('')
+
+  const [adminId, setAdminId] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminOtp, setAdminOtp] = useState('')
+
+  // §4.2.4: 이메일/비밀번호로 로그인하면 선택된 역할이 AuthContext(전역 상태)에
+  // 저장되어 구매자/판매자/관리자 모드가 자연스럽게 전환된다.
+  function handleLogin(user: AuthUser) {
+    login(user)
     navigate('/')
   }
 
@@ -45,16 +59,32 @@ function Login() {
           <div className="login__form">
             <div className="login__field">
               <label>아이디 / 이메일</label>
-              <input type="text" placeholder="you@example.com" />
+              <input
+                type="text"
+                placeholder="you@example.com"
+                value={buyerEmail}
+                onChange={(event) => setBuyerEmail(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>비밀번호</label>
-              <input type="password" placeholder="••••••••" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={buyerPassword}
+                onChange={(event) => setBuyerPassword(event.target.value)}
+              />
             </div>
             <button
               type="button"
               className="login__submit login__submit--primary"
-              onClick={() => handleLogin('buyer')}
+              onClick={() =>
+                handleLogin({
+                  email: buyerEmail,
+                  name: buyerEmail.split('@')[0] || '구매자',
+                  role: 'buyer',
+                })
+              }
             >
               구매자로 로그인
             </button>
@@ -65,24 +95,51 @@ function Login() {
           <div className="login__form">
             <div className="login__field">
               <label>조합명</label>
-              <input type="text" placeholder="예: 통영수산업협동조합" />
+              <input
+                type="text"
+                placeholder="예: 통영수산업협동조합"
+                value={coopName}
+                onChange={(event) => setCoopName(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>사업자등록번호</label>
-              <input type="text" placeholder="000-00-00000" />
+              <input
+                type="text"
+                placeholder="000-00-00000"
+                value={sellerBizNumber}
+                onChange={(event) => setSellerBizNumber(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>아이디 / 이메일</label>
-              <input type="text" placeholder="you@coop.com" />
+              <input
+                type="text"
+                placeholder="you@coop.com"
+                value={sellerEmail}
+                onChange={(event) => setSellerEmail(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>비밀번호</label>
-              <input type="password" placeholder="••••••••" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={sellerPassword}
+                onChange={(event) => setSellerPassword(event.target.value)}
+              />
             </div>
             <button
               type="button"
               className="login__submit login__submit--coral"
-              onClick={() => handleLogin('seller')}
+              onClick={() =>
+                handleLogin({
+                  email: sellerEmail,
+                  name: coopName || '판매자',
+                  role: 'seller',
+                  sellerVerification: { type: 'business', businessRegNumber: sellerBizNumber },
+                })
+              }
             >
               판매자로 로그인
             </button>
@@ -93,20 +150,41 @@ function Login() {
           <div className="login__form">
             <div className="login__field">
               <label>관리자 아이디</label>
-              <input type="text" placeholder="admin" />
+              <input
+                type="text"
+                placeholder="admin"
+                value={adminId}
+                onChange={(event) => setAdminId(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>비밀번호</label>
-              <input type="password" placeholder="••••••••" />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={adminPassword}
+                onChange={(event) => setAdminPassword(event.target.value)}
+              />
             </div>
             <div className="login__field">
               <label>2차 비밀번호(OTP)</label>
-              <input type="text" placeholder="6자리 숫자" />
+              <input
+                type="text"
+                placeholder="6자리 숫자"
+                value={adminOtp}
+                onChange={(event) => setAdminOtp(event.target.value)}
+              />
             </div>
             <button
               type="button"
               className="login__submit login__submit--outline"
-              onClick={() => handleLogin('admin')}
+              onClick={() =>
+                handleLogin({
+                  email: adminId,
+                  name: '관리자',
+                  role: 'admin',
+                })
+              }
             >
               관리자로 로그인
             </button>
@@ -114,7 +192,10 @@ function Login() {
         )}
 
         <p className="login__signup-hint fs-caption">
-          아직 계정이 없으신가요? <span className="login__signup-link">회원가입</span>
+          아직 계정이 없으신가요?{' '}
+          <span className="login__signup-link" onClick={() => navigate('/signup')}>
+            회원가입
+          </span>
         </p>
       </div>
     </div>

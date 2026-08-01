@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, type CartItem } from '../context/CartContext'
 import { useProducts } from '../context/ProductsContext'
-import { useOrders } from '../context/OrdersContext'
+import { ORDER_STAGES, useOrders } from '../context/OrdersContext'
+import { useAuth } from '../context/AuthContext'
 import type { Product } from '../components/ProductCard'
 import './MyPage.css'
 
@@ -32,11 +33,17 @@ const TABS: { id: MypageTab; label: string }[] = [
 function MyPage() {
   const [activeTab, setActiveTab] = useState<MypageTab>('cart')
   const [modalOpen, setModalOpen] = useState(false)
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const { items, removeItem, clearCart } = useCart()
   const { getProduct, purchase } = useProducts()
-  const { addOrder } = useOrders()
+  const { orders, addOrder } = useOrders()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
+
+  // 미완료된 주문/정산 건(아직 구매확정 전 단계)이 있으면 탈퇴를 제한한다
+  const pendingOrders = orders.filter((order) => order.stage < ORDER_STAGES.length - 1)
+  const hasPendingOrders = pendingOrders.length > 0
 
   const rows = useMemo<CartRow[]>(() => {
     const result: CartRow[] = []
@@ -78,6 +85,19 @@ function MyPage() {
     setModalOpen(false)
     flashToast(`장바구니 상품 결제가 완료되었습니다 (총 ${won(totalAmount)}) · 배송 준비 중`)
     navigate('/orders')
+  }
+
+  function handleWithdraw() {
+    if (hasPendingOrders) {
+      setWithdrawModalOpen(false)
+      flashToast(`미완료된 주문/정산 건이 ${pendingOrders.length}건 있어 탈퇴할 수 없습니다`)
+      return
+    }
+
+    logout()
+    setWithdrawModalOpen(false)
+    flashToast('회원 탈퇴가 완료되었습니다')
+    navigate('/')
   }
 
   return (
@@ -148,7 +168,48 @@ function MyPage() {
           )}
 
           {activeTab === 'edit' && (
-            <div className="mypage__empty fs-body2">정보수정은 준비 중입니다</div>
+            <div className="mypage__account">
+              {user ? (
+                <div className="mypage__account-info">
+                  <div className="mypage__account-row">
+                    <span className="mypage__account-label fs-caption">이름</span>
+                    <span className="fs-body2">{user.name}</span>
+                  </div>
+                  <div className="mypage__account-row">
+                    <span className="mypage__account-label fs-caption">이메일</span>
+                    <span className="fs-body2">{user.email}</span>
+                  </div>
+                  <div className="mypage__account-row">
+                    <span className="mypage__account-label fs-caption">회원 유형</span>
+                    <span className="fs-body2">
+                      {user.role === 'seller' ? '판매자' : user.role === 'admin' ? '관리자' : '구매자'}
+                    </span>
+                  </div>
+                  {user.sellerVerification && (
+                    <div className="mypage__account-row">
+                      <span className="mypage__account-label fs-caption">판매자 인증</span>
+                      <span className="fs-body2">
+                        {user.sellerVerification.type === 'business'
+                          ? `사업자등록번호 ${user.sellerVerification.businessRegNumber}`
+                          : `어선원부 번호 ${user.sellerVerification.vesselRegNumber}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="mypage__empty fs-body2">로그인 정보가 없습니다</div>
+              )}
+
+              <div className="mypage__withdraw-block">
+                <button
+                  type="button"
+                  className="mypage__withdraw-btn"
+                  onClick={() => setWithdrawModalOpen(true)}
+                >
+                  회원 탈퇴
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -177,6 +238,46 @@ function MyPage() {
                 onClick={handleCheckoutConfirm}
               >
                 확인(동의)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {withdrawModalOpen && (
+        <div className="mypage__modal-overlay" onClick={() => setWithdrawModalOpen(false)}>
+          <div className="mypage__modal" onClick={(event) => event.stopPropagation()}>
+            <h3 className="mypage__modal-title">회원 탈퇴</h3>
+
+            {hasPendingOrders ? (
+              <p className="mypage__modal-text">
+                미완료된 주문/정산 건이 {pendingOrders.length}건 있어 탈퇴할 수 없습니다. 모든 주문이
+                구매확정된 이후 다시 시도해주세요.
+              </p>
+            ) : (
+              <p className="mypage__modal-text">정말 탈퇴하시겠습니까? 탈퇴 후에는 되돌릴 수 없습니다.</p>
+            )}
+
+            <p className="mypage__modal-notice fs-caption">
+              탈퇴 완료 시 개인정보는 즉시 파기되지만 전자상거래법에 따라 거래 내역은 5년간 분리
+              보관됩니다.
+            </p>
+
+            <div className="mypage__modal-actions">
+              <button
+                type="button"
+                className="mypage__modal-btn mypage__modal-btn--cancel"
+                onClick={() => setWithdrawModalOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="mypage__modal-btn mypage__modal-btn--confirm"
+                onClick={handleWithdraw}
+                disabled={hasPendingOrders}
+              >
+                탈퇴하기
               </button>
             </div>
           </div>

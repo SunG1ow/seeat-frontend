@@ -3,6 +3,10 @@ import './ProductCard.css'
 
 export type ProductStatus = 'onsale' | 'urgent' | 'soldout'
 
+// ProductManagement.tsx(판매자 상품관리 화면)에서 판매자가 직접 지정하는 수동 판매상태.
+// 미지정(undefined)은 'onsale'과 동일하게 취급해 기존 데모 상품과 호환된다.
+export type SellerListingStatus = 'onsale' | 'soldout' | 'suspended'
+
 export interface Product {
   id: number
   species: string
@@ -16,6 +20,7 @@ export interface Product {
   deadlineMs: number
   emoji: string
   mandatory?: boolean
+  sellerStatus?: SellerListingStatus
   /** 최근 7일 평균 시세 추이 (상세 화면 스파크라인용) */
   trend?: number[]
 }
@@ -30,9 +35,12 @@ interface ProductCardProps {
 
 // 상태 계산 로직: ProductCard 내부(실시간 카운트다운)와 검색 화면의 상태 필터링에서 공유한다.
 export function getProductStatus(
-  product: Pick<Product, 'remain' | 'total'>,
+  product: Pick<Product, 'remain' | 'total' | 'sellerStatus'>,
   remainMs: number,
 ): ProductStatus {
+  // 판매자가 상품관리 화면에서 '품절' 또는 '판매중지'로 직접 지정한 경우, 재고/마감시간과
+  // 무관하게 구매자 화면에서는 매진과 동일하게(구매 불가) 노출한다.
+  if (product.sellerStatus === 'soldout' || product.sellerStatus === 'suspended') return 'soldout'
   const isSoldOut = product.remain <= 0 || remainMs <= 0
   if (isSoldOut) return 'soldout'
   const isUrgent = remainMs < 10 * 60 * 1000 || product.remain / product.total < 0.2
