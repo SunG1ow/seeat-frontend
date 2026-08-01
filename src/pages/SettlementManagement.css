@@ -1,0 +1,122 @@
+/* ============================================================
+   SettlementManagement — 판매자 전용 정산 및 매출 조회 화면 (읽기 전용)
+   ============================================================ */
+
+.settlement-mgmt__title {
+  margin-bottom: 4px;
+}
+
+.settlement-mgmt__subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 22px;
+}
+
+.settlement-mgmt__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.settlement-mgmt__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.settlement-mgmt__card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.settlement-mgmt__card-label {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.settlement-mgmt__card-value {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.settlement-mgmt__card-value--done {
+  color: var(--color-success);
+}
+
+.settlement-mgmt__card-value--pending {
+  color: var(--color-warning);
+}
+
+.settlement-mgmt__guardrail {
+  color: var(--color-text-muted);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 18px;
+}
+
+.settlement-mgmt__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.settlement-mgmt__table th,
+.settlement-mgmt__table td {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settlement-mgmt__table th {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--color-background);
+}
+
+.settlement-mgmt__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.settlement-mgmt__fee {
+  color: var(--color-danger);
+  white-space: nowrap;
+}
+
+.settlement-mgmt__fee-rate {
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+
+.settlement-mgmt__badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 700;
+  background: #eaedf2;
+  color: var(--color-text-muted);
+}
+
+.settlement-mgmt__badge--done {
+  background: #e8f8f0;
+  color: var(--color-success);
+}
+
+.settlement-mgmt__badge--pending {
+  background: #fff3e6;
+  color: var(--color-warning);
+}

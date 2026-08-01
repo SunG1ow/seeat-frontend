@@ -10,6 +10,7 @@ import MyPage from './pages/MyPage'
 import Orders from './pages/Orders'
 import OrderManagement from './pages/OrderManagement'
 import ShippingManagement from './pages/ShippingManagement'
+import SettlementManagement from './pages/SettlementManagement'
 import ProductManagement from './pages/ProductManagement'
 import ProductRegistration from './pages/ProductRegistration'
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/seller/orders" element={<OrderManagement />} />
             <Route path="/seller/shipping" element={<ShippingManagement />} />
+            <Route path="/seller/settlement" element={<SettlementManagement />} />
             <Route path="/manage" element={<ProductManagement />} />
             <Route path="/register" element={<ProductRegistration />} />
           </Routes>
