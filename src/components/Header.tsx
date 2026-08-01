@@ -20,6 +20,8 @@ const COMMON_NAV: NavItem[] = [
 
 const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'register', label: '상품등록' },
+  { id: 'manage', label: '상품관리', path: '/manage' },
+  { id: 'register', label: '상품등록', path: '/register' },
   { id: 'manage', label: '상품관리' },
   { id: 'order-management', label: '주문관리', path: '/seller/orders' },
   { id: 'shipping-management', label: '배송/클레임 관리', path: '/seller/shipping' },
@@ -83,7 +85,7 @@ function Header() {
             </button>
           ) : (
             <>
-              <button type="button" className="link-btn">
+              <button type="button" className="link-btn" onClick={() => navigate('/signup')}>
                 회원가입
               </button>
               <Link to="/login" className="link-btn">
