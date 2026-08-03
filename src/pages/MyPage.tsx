@@ -4,8 +4,17 @@ import { useCart, type CartItem } from '../context/CartContext'
 import { useProducts } from '../context/ProductsContext'
 import { ORDER_STAGES, useOrders } from '../context/OrdersContext'
 import { useAuth } from '../context/AuthContext'
+import { useAddresses, MAX_ADDRESS_COUNT, type Address, type AddressInput } from '../context/AddressContext'
 import type { Product } from '../components/ProductCard'
 import './MyPage.css'
+
+const EMPTY_ADDRESS_DRAFT: AddressInput = {
+  recipient: '',
+  phone: '',
+  zipcode: '',
+  address1: '',
+  address2: '',
+}
 
 interface CartRow {
   item: CartItem
@@ -39,7 +48,13 @@ function MyPage() {
   const { getProduct, purchase } = useProducts()
   const { orders, addOrder } = useOrders()
   const { user, logout } = useAuth()
+  const { addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAddresses()
   const navigate = useNavigate()
+
+  const [addrFormOpen, setAddrFormOpen] = useState(false)
+  const [editingAddrId, setEditingAddrId] = useState<number | null>(null)
+  const [addrDraft, setAddrDraft] = useState<AddressInput>(EMPTY_ADDRESS_DRAFT)
+  const [addrError, setAddrError] = useState<string | null>(null)
 
   // 미완료된 주문/정산 건(아직 구매확정 전 단계)이 있으면 탈퇴를 제한한다
   const pendingOrders = orders.filter((order) => order.stage < ORDER_STAGES.length - 1)
@@ -98,6 +113,67 @@ function MyPage() {
     setWithdrawModalOpen(false)
     flashToast('회원 탈퇴가 완료되었습니다')
     navigate('/')
+  }
+
+  function openAddAddressForm() {
+    if (addresses.length >= MAX_ADDRESS_COUNT) {
+      flashToast(`배송지는 최대 ${MAX_ADDRESS_COUNT}개까지 등록할 수 있습니다`)
+      return
+    }
+    setEditingAddrId(null)
+    setAddrDraft(EMPTY_ADDRESS_DRAFT)
+    setAddrError(null)
+    setAddrFormOpen(true)
+  }
+
+  function openEditAddressForm(address: Address) {
+    setEditingAddrId(address.id)
+    setAddrDraft({
+      recipient: address.recipient,
+      phone: address.phone,
+      zipcode: address.zipcode,
+      address1: address.address1,
+      address2: address.address2,
+    })
+    setAddrError(null)
+    setAddrFormOpen(true)
+  }
+
+  function closeAddressForm() {
+    setAddrFormOpen(false)
+    setEditingAddrId(null)
+    setAddrError(null)
+  }
+
+  function handleAddressSave() {
+    const { recipient, phone, zipcode, address1, address2 } = addrDraft
+    if (!recipient.trim() || !phone.trim() || !zipcode.trim() || !address1.trim() || !address2.trim()) {
+      setAddrError('모든 항목을 입력해주세요')
+      return
+    }
+
+    if (editingAddrId !== null) {
+      updateAddress(editingAddrId, { recipient, phone, zipcode, address1, address2 })
+      flashToast('배송지가 수정되었습니다')
+    } else {
+      const added = addAddress({ recipient, phone, zipcode, address1, address2 })
+      if (!added) {
+        flashToast(`배송지는 최대 ${MAX_ADDRESS_COUNT}개까지 등록할 수 있습니다`)
+        return
+      }
+      flashToast('배송지가 추가되었습니다')
+    }
+    closeAddressForm()
+  }
+
+  function handleDeleteAddress(id: number) {
+    removeAddress(id)
+    flashToast('배송지가 삭제되었습니다')
+  }
+
+  function handleSetDefaultAddress(id: number) {
+    setDefaultAddress(id)
+    flashToast('기본 배송지로 설정되었습니다')
   }
 
   return (
@@ -164,7 +240,154 @@ function MyPage() {
             ))}
 
           {activeTab === 'address' && (
-            <div className="mypage__empty fs-body2">배송지 관리는 준비 중입니다</div>
+            <div className="mypage__address">
+              {addresses.length === 0 ? (
+                <div className="mypage__empty fs-body2">등록된 배송지가 없습니다</div>
+              ) : (
+                <div className="mypage__addr-list">
+                  {[...addresses]
+                    .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+                    .map((address) => (
+                      <div className="mypage__addr-card" key={address.id}>
+                        <div className="mypage__addr-main">
+                          <div className="mypage__addr-head">
+                            <b>{address.recipient}</b>
+                            {address.isDefault && (
+                              <span className="mypage__addr-badge">기본 배송지</span>
+                            )}
+                          </div>
+                          <div className="mypage__addr-phone fs-caption">{address.phone}</div>
+                          <div className="mypage__addr-line fs-body2">
+                            ({address.zipcode}) {address.address1} {address.address2}
+                          </div>
+                        </div>
+                        <div className="mypage__addr-actions">
+                          {!address.isDefault && (
+                            <button
+                              type="button"
+                              className="mypage__addr-action-btn"
+                              onClick={() => handleSetDefaultAddress(address.id)}
+                            >
+                              기본으로 설정
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="mypage__addr-action-btn"
+                            onClick={() => openEditAddressForm(address)}
+                          >
+                            수정
+                          </button>
+                          <button
+                            type="button"
+                            className="mypage__addr-action-btn mypage__addr-action-btn--danger"
+                            onClick={() => handleDeleteAddress(address.id)}
+                          >
+                            삭제
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              <div className="mypage__addr-footer">
+                <button
+                  type="button"
+                  className="mypage__addr-add-btn"
+                  onClick={openAddAddressForm}
+                  disabled={addresses.length >= MAX_ADDRESS_COUNT}
+                >
+                  + 새 배송지 추가
+                </button>
+                <span className="mypage__addr-count fs-caption">
+                  {addresses.length} / {MAX_ADDRESS_COUNT}
+                  {addresses.length >= MAX_ADDRESS_COUNT && ' · 최대 등록 개수에 도달했습니다'}
+                </span>
+              </div>
+
+              {addrFormOpen && (
+                <div className="mypage__addr-form">
+                  <h3 className="mypage__addr-form-title">
+                    {editingAddrId !== null ? '배송지 수정' : '새 배송지 추가'}
+                  </h3>
+
+                  <div className="mypage__addr-form-grid">
+                    <div className="mypage__addr-field">
+                      <label>수령인 이름</label>
+                      <input
+                        type="text"
+                        value={addrDraft.recipient}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, recipient: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="mypage__addr-field">
+                      <label>연락처</label>
+                      <input
+                        type="text"
+                        placeholder="010-0000-0000"
+                        value={addrDraft.phone}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, phone: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="mypage__addr-field">
+                      <label>우편번호</label>
+                      <input
+                        type="text"
+                        placeholder="00000"
+                        value={addrDraft.zipcode}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, zipcode: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="mypage__addr-field mypage__addr-field--full">
+                      <label>기본 주소</label>
+                      <input
+                        type="text"
+                        value={addrDraft.address1}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, address1: event.target.value }))
+                        }
+                      />
+                    </div>
+                    <div className="mypage__addr-field mypage__addr-field--full">
+                      <label>상세 주소</label>
+                      <input
+                        type="text"
+                        value={addrDraft.address2}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, address2: event.target.value }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {addrError && <p className="mypage__addr-error fs-body2">{addrError}</p>}
+
+                  <div className="mypage__addr-form-actions">
+                    <button
+                      type="button"
+                      className="mypage__modal-btn mypage__modal-btn--cancel"
+                      onClick={closeAddressForm}
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      className="mypage__modal-btn mypage__modal-btn--confirm"
+                      onClick={handleAddressSave}
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'edit' && (

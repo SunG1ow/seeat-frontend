@@ -22,6 +22,8 @@ const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'manage', label: '상품관리', path: '/manage' },
 ]
 
+const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항', path: '/notice' }
+
 function Header() {
   const { role, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()

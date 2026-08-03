@@ -153,6 +153,177 @@
   background: var(--color-accent-hover);
 }
 
+/* ---- 배송지 관리 (F-06-02) ---- */
+.mypage__address {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mypage__addr-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.mypage__addr-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: var(--color-surface);
+}
+
+.mypage__addr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.mypage__addr-badge {
+  background: #effbfd;
+  color: var(--color-secondary-hover);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.mypage__addr-phone {
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.mypage__addr-line {
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.mypage__addr-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.mypage__addr-action-btn {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: 7px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.mypage__addr-action-btn:hover {
+  background: var(--color-background);
+}
+
+.mypage__addr-action-btn--danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.mypage__addr-action-btn--danger:hover {
+  background: #fdeceb;
+}
+
+.mypage__addr-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mypage__addr-add-btn {
+  border: 1px dashed var(--color-border-input-muted);
+  background: #fff;
+  color: var(--color-primary);
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.mypage__addr-add-btn:hover {
+  background: var(--color-background);
+}
+
+.mypage__addr-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mypage__addr-count {
+  color: var(--color-text-muted);
+}
+
+.mypage__addr-form {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  background: var(--color-surface);
+  max-width: 480px;
+}
+
+.mypage__addr-form-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mypage__addr-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mypage__addr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mypage__addr-field--full {
+  grid-column: 1 / -1;
+}
+
+.mypage__addr-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.mypage__addr-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+.mypage__addr-field input:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.mypage__addr-error {
+  color: var(--color-danger);
+  font-weight: 700;
+  margin: 12px 0 0;
+}
+
+.mypage__addr-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 /* ---- 정보수정: 계정 정보 + 회원 탈퇴 ---- */
 .mypage__account {
   display: flex;
