@@ -13,6 +13,7 @@ import ShippingManagement from './pages/ShippingManagement'
 import SettlementManagement from './pages/SettlementManagement'
 import ProductManagement from './pages/ProductManagement'
 import ProductRegistration from './pages/ProductRegistration'
+import Notice from './pages/Notice'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
             <Route path="/seller/settlement" element={<SettlementManagement />} />
             <Route path="/manage" element={<ProductManagement />} />
             <Route path="/register" element={<ProductRegistration />} />
+            <Route path="/notice" element={<Notice />} />
           </Routes>
         </div>
       </main>
