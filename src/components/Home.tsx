@@ -144,7 +144,7 @@ function Home() {
                 onAddToCart={(p) => {
                   if (p.remain <= 0) return
                   addItem(p.id, 1)
-                  flashToast(`🛒 ${p.species}이(가) 장바구니에 담겼습니다`)
+                  flashToast(`${p.species}이(가) 장바구니에 담겼습니다`)
                 }}
                 onBuyNow={(p) => navigate(`/product/${p.id}`)}
               />

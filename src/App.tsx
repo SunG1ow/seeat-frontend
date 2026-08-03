@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import AuthAndProfile from './pages/AuthAndProfile'
 import Search from './pages/Search'
 import Detail from './pages/Detail'
+import Cart from './pages/Cart'
 import MyPage from './pages/MyPage'
 import Orders from './pages/Orders'
 import OrderManagement from './pages/OrderManagement'
@@ -28,6 +29,7 @@ function App() {
             <Route path="/signup" element={<AuthAndProfile />} />
             <Route path="/search" element={<Search />} />
             <Route path="/product/:id" element={<Detail />} />
+            <Route path="/cart" element={<Cart />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/seller/orders" element={<OrderManagement />} />

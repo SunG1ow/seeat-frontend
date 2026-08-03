@@ -1,0 +1,195 @@
+/* ============================================================
+   Cart — SEEAT-_3.HTM #screen-mypage(.cart-item, .total-line) 참고
+   ============================================================ */
+
+.cart__title {
+  margin-bottom: 22px;
+}
+
+.cart__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.cart__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.cart__item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #dceef0, #c7e4e6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+
+.cart__item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart__item-info b {
+  font-size: 13.5px;
+}
+
+.cart__item-meta {
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.cart__item-price {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.cart__item-remove {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.cart__item-remove:hover {
+  background: var(--color-background);
+}
+
+.cart__total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin: 14px 0;
+  padding: 14px;
+  background: #f5f8fb;
+  border-radius: 10px;
+}
+
+.cart__amount {
+  font-weight: 800;
+  font-size: 19px;
+  color: var(--color-primary);
+}
+
+.cart__checkout-btn {
+  width: 100%;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--color-accent);
+  color: #fff;
+  margin-top: 4px;
+}
+
+.cart__checkout-btn:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ---- 결제 확인 모달: 환불 불가 / 재고 잠금 필수 안내 ---- */
+.cart__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.cart__modal {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 45px rgba(10, 31, 61, 0.25);
+  padding: 26px;
+  width: 420px;
+  max-width: calc(100vw - 40px);
+}
+
+.cart__modal-title {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--color-danger);
+}
+
+.cart__modal-text {
+  font-size: 13.5px;
+  color: var(--color-text);
+  line-height: 1.6;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  background: #fff7ec;
+  border: 1px solid #f3d9ae;
+  border-radius: 8px;
+}
+
+.cart__modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.cart__modal-btn {
+  flex: 1;
+  border-radius: 9px;
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.cart__modal-btn--cancel {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.cart__modal-btn--cancel:hover {
+  background: var(--color-background);
+}
+
+.cart__modal-btn--confirm {
+  border: none;
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.cart__modal-btn--confirm:hover {
+  background: var(--color-accent-hover);
+}
+
+.cart__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}

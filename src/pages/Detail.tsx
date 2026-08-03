@@ -195,7 +195,7 @@ function Detail() {
               disabled={isSoldOut}
               onClick={handleAddToCart}
             >
-              🛒 장바구니 담기
+              장바구니 담기
             </button>
             <button
               type="button"

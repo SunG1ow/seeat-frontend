@@ -136,7 +136,7 @@ function ProductCard({ product, hideTimer = false, onAddToCart, onBuyNow }: Prod
               onAddToCart?.(product)
             }}
           >
-            🛒 담기
+            장바구니
           </button>
           <button
             type="button"
