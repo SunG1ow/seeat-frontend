@@ -14,6 +14,7 @@ import SettlementManagement from './pages/SettlementManagement'
 import ProductManagement from './pages/ProductManagement'
 import ProductRegistration from './pages/ProductRegistration'
 import Notice from './pages/Notice'
+import AdminDashboard from './pages/AdminDashboard'
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/manage" element={<ProductManagement />} />
             <Route path="/register" element={<ProductRegistration />} />
             <Route path="/notice" element={<Notice />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </div>
       </main>
