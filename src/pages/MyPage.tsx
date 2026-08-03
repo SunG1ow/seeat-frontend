@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, type CartItem } from '../context/CartContext'
 import { useProducts } from '../context/ProductsContext'
@@ -47,7 +47,7 @@ function MyPage() {
   const { items, removeItem, clearCart } = useCart()
   const { getProduct, purchase } = useProducts()
   const { orders, addOrder } = useOrders()
-  const { user, logout } = useAuth()
+  const { user, logout, updateProfile } = useAuth()
   const { addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAddresses()
   const navigate = useNavigate()
 
@@ -55,6 +55,18 @@ function MyPage() {
   const [editingAddrId, setEditingAddrId] = useState<number | null>(null)
   const [addrDraft, setAddrDraft] = useState<AddressInput>(EMPTY_ADDRESS_DRAFT)
   const [addrError, setAddrError] = useState<string | null>(null)
+
+  const [nicknameDraft, setNicknameDraft] = useState('')
+  const [phoneDraft, setPhoneDraft] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
+  const [profileError, setProfileError] = useState<string | null>(null)
+
+  // 로그인한 사용자 정보가 바뀔 때(로그인/로그아웃 포함)마다 수정 폼 초기값을 동기화한다
+  useEffect(() => {
+    setNicknameDraft(user?.name ?? '')
+    setPhoneDraft(user?.phone ?? '')
+  }, [user])
 
   // 미완료된 주문/정산 건(아직 구매확정 전 단계)이 있으면 탈퇴를 제한한다
   const pendingOrders = orders.filter((order) => order.stage < ORDER_STAGES.length - 1)
@@ -113,6 +125,32 @@ function MyPage() {
     setWithdrawModalOpen(false)
     flashToast('회원 탈퇴가 완료되었습니다')
     navigate('/')
+  }
+
+  function handleProfileSave() {
+    if (!user) return
+
+    if (!nicknameDraft.trim()) {
+      setProfileError('닉네임을 입력해주세요')
+      return
+    }
+    // 비밀번호 변경은 선택 사항: 두 필드가 모두 비어 있으면 비밀번호는 그대로 둔다
+    if (newPassword || newPasswordConfirm) {
+      if (newPassword.length < 8) {
+        setProfileError('새 비밀번호는 8자 이상 입력해주세요')
+        return
+      }
+      if (newPassword !== newPasswordConfirm) {
+        setProfileError('새 비밀번호가 일치하지 않습니다')
+        return
+      }
+    }
+
+    updateProfile({ name: nicknameDraft.trim(), phone: phoneDraft.trim() })
+    setNewPassword('')
+    setNewPasswordConfirm('')
+    setProfileError(null)
+    flashToast('회원 정보가 수정되었습니다')
   }
 
   function openAddAddressForm() {
@@ -393,32 +431,80 @@ function MyPage() {
           {activeTab === 'edit' && (
             <div className="mypage__account">
               {user ? (
-                <div className="mypage__account-info">
-                  <div className="mypage__account-row">
-                    <span className="mypage__account-label fs-caption">이름</span>
-                    <span className="fs-body2">{user.name}</span>
-                  </div>
-                  <div className="mypage__account-row">
-                    <span className="mypage__account-label fs-caption">이메일</span>
-                    <span className="fs-body2">{user.email}</span>
-                  </div>
-                  <div className="mypage__account-row">
-                    <span className="mypage__account-label fs-caption">회원 유형</span>
-                    <span className="fs-body2">
-                      {user.role === 'seller' ? '판매자' : user.role === 'admin' ? '관리자' : '구매자'}
-                    </span>
-                  </div>
-                  {user.sellerVerification && (
-                    <div className="mypage__account-row">
-                      <span className="mypage__account-label fs-caption">판매자 인증</span>
-                      <span className="fs-body2">
-                        {user.sellerVerification.type === 'business'
-                          ? `사업자등록번호 ${user.sellerVerification.businessRegNumber}`
-                          : `어선원부 번호 ${user.sellerVerification.vesselRegNumber}`}
-                      </span>
+                <>
+                  <div className="mypage__account-form">
+                    <div className="mypage__account-field">
+                      <label>닉네임</label>
+                      <input
+                        type="text"
+                        value={nicknameDraft}
+                        onChange={(event) => setNicknameDraft(event.target.value)}
+                      />
                     </div>
-                  )}
-                </div>
+                    <div className="mypage__account-field">
+                      <label>연락처</label>
+                      <input
+                        type="text"
+                        placeholder="010-0000-0000"
+                        value={phoneDraft}
+                        onChange={(event) => setPhoneDraft(event.target.value)}
+                      />
+                    </div>
+                    <div className="mypage__account-field">
+                      <label>이메일 (수정 불가)</label>
+                      <input type="text" value={user.email} readOnly disabled />
+                    </div>
+                    <div className="mypage__account-field">
+                      <label>회원 유형 (수정 불가)</label>
+                      <input
+                        type="text"
+                        readOnly
+                        disabled
+                        value={
+                          user.role === 'seller' ? '판매자' : user.role === 'admin' ? '관리자' : '구매자'
+                        }
+                      />
+                    </div>
+                    {user.sellerVerification && (
+                      <div className="mypage__account-field mypage__account-field--full">
+                        <label>판매자 인증 (수정 불가)</label>
+                        <input
+                          type="text"
+                          readOnly
+                          disabled
+                          value={
+                            user.sellerVerification.type === 'business'
+                              ? `사업자등록번호 ${user.sellerVerification.businessRegNumber}`
+                              : `어선원부 번호 ${user.sellerVerification.vesselRegNumber}`
+                          }
+                        />
+                      </div>
+                    )}
+                    <div className="mypage__account-field">
+                      <label>새 비밀번호</label>
+                      <input
+                        type="password"
+                        placeholder="8자 이상 입력 (변경 시에만)"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                      />
+                    </div>
+                    <div className="mypage__account-field">
+                      <label>새 비밀번호 확인</label>
+                      <input
+                        type="password"
+                        value={newPasswordConfirm}
+                        onChange={(event) => setNewPasswordConfirm(event.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {profileError && <p className="mypage__account-error fs-body2">{profileError}</p>}
+
+                  <button type="button" className="mypage__account-save-btn" onClick={handleProfileSave}>
+                    수정 완료
+                  </button>
+                </>
               ) : (
                 <div className="mypage__empty fs-body2">로그인 정보가 없습니다</div>
               )}
