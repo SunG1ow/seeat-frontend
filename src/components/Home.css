@@ -11,12 +11,136 @@
 }
 
 .home__section-head {
+  margin-top: 36px;
   margin-bottom: 18px;
+}
+
+.home__section-head:first-child {
+  margin-top: 0;
 }
 
 .home__section-sub {
   color: var(--color-text-muted);
   margin-top: 4px;
+}
+
+.home__section-head--row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.home__section-note {
+  color: var(--color-text-muted);
+}
+
+.home__more-link {
+  color: var(--color-secondary-hover);
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+.home__more-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- 오늘의 평균 도매 시세 ---- */
+.home__price-widget {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.home__price-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.home__price-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.home__price-card-name {
+  font-weight: 700;
+}
+
+.home__price-card-delta {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.home__price-card-delta--up {
+  color: var(--color-danger);
+}
+
+.home__price-card-delta--down {
+  color: var(--color-secondary-hover);
+}
+
+.home__price-card-value {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.home__price-card-value small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.home__sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 34px;
+}
+
+.home__sparkline-bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--color-secondary), var(--color-secondary-hover));
+  border-radius: 2px 2px 0 0;
+  min-height: 3px;
+}
+
+.home__sparkline-bar--last {
+  background: linear-gradient(180deg, var(--color-accent), var(--color-accent-hover));
+}
+
+/* ---- 공지사항 미리보기 ---- */
+.home__notice-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.home__notice-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.home__notice-row + .home__notice-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.home__notice-title {
+  min-width: 0;
+}
+
+.home__notice-date {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
 }
 
 .home__carousel-row {
