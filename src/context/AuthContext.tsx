@@ -19,6 +19,7 @@ export interface AuthUser {
   email: string
   name: string
   role: UserRole
+  phone?: string
   sellerVerification?: SellerVerification
 }
 
@@ -28,6 +29,8 @@ interface AuthContextValue {
   user: AuthUser | null
   login: (user: AuthUser) => void
   logout: () => void
+  /** 마이페이지 정보수정: 닉네임·연락처만 변경 가능 (이메일·회원 유형은 읽기 전용) */
+  updateProfile: (patch: { name: string; phone: string }) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -45,6 +48,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       logout: () => {
         setUser(null)
+      },
+      updateProfile: (patch) => {
+        setUser((prev) => (prev ? { ...prev, name: patch.name, phone: patch.phone } : prev))
       },
     }),
     [user],

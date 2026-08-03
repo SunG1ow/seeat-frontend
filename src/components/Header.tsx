@@ -15,23 +15,22 @@ interface NavItem {
 const HOME_NAV: NavItem = { id: 'home', label: '홈', path: '/' }
 const SEARCH_NAV: NavItem = { id: 'search', label: '상품검색', path: '/search' }
 const ORDERS_NAV: NavItem = { id: 'orders', label: '주문내역', path: '/orders' }
-const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항' }
+const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항', path: '/notice' }
 
 const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'register', label: '상품등록', path: '/register' },
   { id: 'manage', label: '상품관리', path: '/manage' },
 ]
 
-const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항', path: '/notice' }
-
 function Header() {
   const { role, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
+  // 구매자: 홈·상품검색·주문내역·공지사항 / 판매자: 여기에 상품등록·상품관리가 추가된다
   const navItems =
     role === 'seller'
-      ? [HOME_NAV, SEARCH_NAV, ...SELLER_ONLY_NAV, ORDERS_NAV, NOTICE_NAV]
+      ? [HOME_NAV, SEARCH_NAV, ORDERS_NAV, ...SELLER_ONLY_NAV, NOTICE_NAV]
       : [HOME_NAV, SEARCH_NAV, ORDERS_NAV, NOTICE_NAV]
 
   function handleLogout() {

@@ -331,26 +331,70 @@
   gap: 20px;
 }
 
-.mypage__account-info {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.mypage__account-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
   padding: 18px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   background: var(--color-surface);
 }
 
-.mypage__account-row {
+.mypage__account-field {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.mypage__account-label {
-  width: 90px;
-  flex: 0 0 auto;
-  color: var(--color-text-muted);
+.mypage__account-field--full {
+  grid-column: 1 / -1;
+}
+
+.mypage__account-field label {
+  font-size: 12.5px;
   font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.mypage__account-field input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+.mypage__account-field input:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.mypage__account-field input:disabled {
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.mypage__account-error {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.mypage__account-save-btn {
+  align-self: flex-start;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 20px;
+  font-weight: 700;
+  font-size: 13.5px;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.mypage__account-save-btn:hover {
+  background: var(--color-primary-hover);
 }
 
 .mypage__withdraw-block {
