@@ -20,16 +20,15 @@
   border-radius: var(--radius-input);
 }
 
-.manage__grid {
+/* ---- 상단 요약 대시보드 (오늘 매출 / 등록 상품 수 / 평균 낙찰가 / 정산 예정 금액) ---- */
+.manage__summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--layout-grid-gap);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
-.manage__card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.manage__stat-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -37,67 +36,94 @@
   padding: 16px;
 }
 
-.manage__card-head {
-  display: flex;
-  gap: 12px;
-}
-
-.manage__thumb {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #dceef0, #c7e4e6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  color: var(--color-secondary-hover);
-}
-
-.manage__card-meta {
+.manage__stat-card-label {
   color: var(--color-text-muted);
-  font-weight: var(--fw-body2);
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
-.manage__card-origin {
+.manage__stat-card-value {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.manage__stat-card-delta {
   color: var(--color-text-muted);
-  margin-top: 2px;
+  font-weight: 700;
+  margin-top: 4px;
 }
 
-.manage__stat-row {
-  display: flex;
-  gap: 22px;
-  padding: 10px 0;
-  border-top: 1px solid var(--color-border);
+.manage__section-head {
+  margin: 36px 0 14px;
+}
+
+/* ---- 등록 상품 목록 테이블 ---- */
+.manage__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.manage__table th,
+.manage__table td {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13.5px;
   border-bottom: 1px solid var(--color-border);
 }
 
-.manage__stat-label {
+.manage__table th {
   color: var(--color-text-muted);
   font-weight: 700;
-  margin-bottom: 4px;
+  font-size: 12px;
+  background: var(--color-background);
 }
 
-.manage__stat-value {
-  font-size: 15px;
+.manage__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.manage__badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
   font-weight: 700;
+  background: #eaf1fb;
+  color: var(--color-primary);
 }
 
-.manage__status-row {
+.manage__badge--urgent {
+  background: #ffede9;
+  color: var(--color-danger);
+}
+
+/* 매진(품절/판매중지 포함) 뱃지: 눈에 띄는 붉은 계열 대신 차분한 회색 톤으로 표시 */
+.manage__badge--soldout {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.manage__row-actions {
   display: flex;
+  align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .manage__status-btn {
-  flex: 1;
   border: 1px solid var(--color-border);
   background: #fff;
   color: var(--color-text-muted);
   border-radius: var(--radius-input);
-  padding: 8px 6px;
+  padding: 6px 10px;
   font-size: 12px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .manage__status-btn:hover {
@@ -125,11 +151,12 @@
 .manage__edit-btn {
   border: none;
   border-radius: var(--radius-input);
-  padding: 10px 14px;
+  padding: 7px 12px;
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: 12px;
   background: var(--color-primary);
   color: #fff;
+  white-space: nowrap;
 }
 
 .manage__edit-btn:hover {
