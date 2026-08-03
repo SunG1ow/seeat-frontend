@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useProducts } from '../context/ProductsContext'
+import { getProductStatus } from '../components/ProductCard'
 import type { Product, SellerListingStatus } from '../components/ProductCard'
 import './ProductManagement.css'
 
@@ -19,6 +20,20 @@ function won(n: number) {
   return `${n.toLocaleString('ko-KR')}원`
 }
 
+function formatRemaining(ms: number) {
+  const totalSec = Math.max(0, Math.floor(ms / 1000))
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':')
+}
+
+const LISTING_STATUS_LABEL = {
+  onsale: '판매중',
+  urgent: '마감임박',
+  soldout: '매진',
+} as const
+
 function ProductManagement() {
   const { role } = useAuth()
   const { products, updateProduct } = useProducts()
@@ -29,6 +44,13 @@ function ProductManagement() {
   const [stockDraft, setStockDraft] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+
+  // '마감' 열의 카운트다운은 실시간으로 흘러야 하므로 1초마다 기준 시각을 다시 잡는다.
+  useEffect(() => {
+    const timerId = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timerId)
+  }, [])
 
   function flashToast(message: string) {
     setToast(message)
@@ -48,6 +70,14 @@ function ProductManagement() {
 
   const myProducts = products.filter((p) => p.seller === CURRENT_SELLER_NAME)
   const editingProduct = myProducts.find((p) => p.id === editingId)
+
+  // 오늘 매출: (전체 - 잔여) × 단가를 상품별로 합산한 판매 완료분 금액
+  const todayRevenue = myProducts.reduce((sum, p) => sum + (p.total - p.remain) * p.price, 0)
+  const averagePrice = myProducts.length
+    ? Math.round(myProducts.reduce((sum, p) => sum + p.price, 0) / myProducts.length)
+    : 0
+  // 정산 예정 금액: 플랫폼 수수료(5%)를 제외한 익일 정산 예정분 (SettlementManagement와 동일한 수수료율)
+  const pendingSettlement = Math.round(todayRevenue * 0.95)
 
   function openEdit(product: Product) {
     setEditingId(product.id)
@@ -92,65 +122,93 @@ function ProductManagement() {
         {CURRENT_SELLER_NAME}에서 등록한 상품의 가격·재고·판매 상태를 관리합니다
       </p>
 
+      <div className="manage__summary">
+        <div className="manage__stat-card">
+          <div className="manage__stat-card-label fs-caption">오늘 매출</div>
+          <div className="manage__stat-card-value mono">{won(todayRevenue)}</div>
+        </div>
+        <div className="manage__stat-card">
+          <div className="manage__stat-card-label fs-caption">등록 상품 수</div>
+          <div className="manage__stat-card-value mono">{myProducts.length}</div>
+        </div>
+        <div className="manage__stat-card">
+          <div className="manage__stat-card-label fs-caption">평균 낙찰가</div>
+          <div className="manage__stat-card-value mono">{won(averagePrice)}</div>
+        </div>
+        <div className="manage__stat-card">
+          <div className="manage__stat-card-label fs-caption">정산 예정 금액</div>
+          <div className="manage__stat-card-value mono">{won(pendingSettlement)}</div>
+          <div className="manage__stat-card-delta fs-caption">익일 정산</div>
+        </div>
+      </div>
+
+      <div className="manage__section-head">
+        <h2 className="fs-title2">등록 상품 목록</h2>
+      </div>
+
       {myProducts.length === 0 ? (
         <div className="manage__empty fs-body2">등록된 상품이 없습니다</div>
       ) : (
-        <div className="manage__grid">
-          {myProducts.map((product) => {
-            const currentStatus = product.sellerStatus ?? 'onsale'
-            return (
-              <div className="manage__card" key={product.id}>
-                <div className="manage__card-head">
-                  <div className="manage__thumb" aria-hidden="true">
-                    {product.emoji}
-                  </div>
-                  <div className="manage__card-info">
-                    <div className="manage__card-title fs-title2">
-                      {product.species}
-                      <span className="manage__card-meta fs-body2">
-                        {' '}
-                        · {product.grade}등급 · {product.storage}
-                      </span>
+        <table className="manage__table">
+          <thead>
+            <tr>
+              <th>어종</th>
+              <th>지역</th>
+              <th>보관</th>
+              <th>단가</th>
+              <th>잔여/전체</th>
+              <th>마감</th>
+              <th>상태</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {myProducts.map((product) => {
+              const currentStatus = product.sellerStatus ?? 'onsale'
+              const remainMs = product.deadlineMs - now
+              // 잔여 수량 소진 또는 판매 기한 종료(+ 판매자가 직접 품절/중지 처리한 경우)를 모두 '매진'으로 취급한다
+              const listingStatus = getProductStatus(product, remainMs)
+              const isClosed = listingStatus === 'soldout'
+
+              return (
+                <tr key={product.id}>
+                  <td>{product.species}</td>
+                  <td>{product.region}</td>
+                  <td>{product.storage}</td>
+                  <td className="mono">{won(product.price)}</td>
+                  <td className="mono">
+                    {product.remain}/{product.total}kg
+                  </td>
+                  <td className="mono">{isClosed ? '마감' : formatRemaining(remainMs)}</td>
+                  <td>
+                    <span className={`manage__badge manage__badge--${listingStatus}`}>
+                      {LISTING_STATUS_LABEL[listingStatus]}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="manage__row-actions">
+                      {STATUS_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`manage__status-btn manage__status-btn--${option.id}${
+                            currentStatus === option.id ? ' manage__status-btn--active' : ''
+                          }`}
+                          onClick={() => handleStatusChange(product, option.id)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                      <button type="button" className="manage__edit-btn" onClick={() => openEdit(product)}>
+                        가격·재고 수정
+                      </button>
                     </div>
-                    <div className="manage__card-origin fs-caption">원산지: {product.region}</div>
-                  </div>
-                </div>
-
-                <div className="manage__stat-row">
-                  <div>
-                    <div className="manage__stat-label fs-caption">가격</div>
-                    <div className="manage__stat-value mono">{won(product.price)}/kg</div>
-                  </div>
-                  <div>
-                    <div className="manage__stat-label fs-caption">재고</div>
-                    <div className="manage__stat-value mono">
-                      {product.remain} / {product.total}kg
-                    </div>
-                  </div>
-                </div>
-
-                <div className="manage__status-row">
-                  {STATUS_OPTIONS.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={`manage__status-btn manage__status-btn--${option.id}${
-                        currentStatus === option.id ? ' manage__status-btn--active' : ''
-                      }`}
-                      onClick={() => handleStatusChange(product, option.id)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-
-                <button type="button" className="manage__edit-btn" onClick={() => openEdit(product)}>
-                  가격·재고 수정
-                </button>
-              </div>
-            )
-          })}
-        </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       )}
 
       {editingProduct && (

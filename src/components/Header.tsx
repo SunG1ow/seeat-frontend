@@ -12,23 +12,15 @@ interface NavItem {
   path?: string
 }
 
-const COMMON_NAV: NavItem[] = [
-  { id: 'home', label: '홈', path: '/' },
-  { id: 'search', label: '상품검색', path: '/search' },
-  { id: 'orders', label: '주문내역', path: '/orders' },
-]
+const HOME_NAV: NavItem = { id: 'home', label: '홈', path: '/' }
+const SEARCH_NAV: NavItem = { id: 'search', label: '상품검색', path: '/search' }
+const ORDERS_NAV: NavItem = { id: 'orders', label: '주문내역', path: '/orders' }
+const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항' }
 
 const SELLER_ONLY_NAV: NavItem[] = [
-  { id: 'register', label: '상품등록' },
-  { id: 'manage', label: '상품관리', path: '/manage' },
   { id: 'register', label: '상품등록', path: '/register' },
-  { id: 'manage', label: '상품관리' },
-  { id: 'order-management', label: '주문관리', path: '/seller/orders' },
-  { id: 'shipping-management', label: '배송/클레임 관리', path: '/seller/shipping' },
-  { id: 'settlement-management', label: '정산 관리', path: '/seller/settlement' },
+  { id: 'manage', label: '상품관리', path: '/manage' },
 ]
-
-const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항' }
 
 function Header() {
   const { role, isAuthenticated, logout } = useAuth()
@@ -36,7 +28,9 @@ function Header() {
   const location = useLocation()
 
   const navItems =
-    role === 'seller' ? [...COMMON_NAV, ...SELLER_ONLY_NAV, NOTICE_NAV] : [...COMMON_NAV, NOTICE_NAV]
+    role === 'seller'
+      ? [HOME_NAV, SEARCH_NAV, ...SELLER_ONLY_NAV, ORDERS_NAV, NOTICE_NAV]
+      : [HOME_NAV, SEARCH_NAV, ORDERS_NAV, NOTICE_NAV]
 
   function handleLogout() {
     logout()
