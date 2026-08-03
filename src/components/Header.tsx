@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import logo from '../assets/logo-white.png'
 import './Header.css'
 
 // §4.2.2 GNB: 구매자 모드 vs 판매자 모드는 계정 유형에 따라 결정되며,
@@ -47,10 +48,9 @@ function Header() {
       </div>
 
       <div className="nav-row container">
-        <div className="logo">
-          <span className="logo-dot" />
-          SEEAT
-        </div>
+        <Link to="/" className="logo">
+          <img src={logo} alt="SEEAT" className="logo-img" />
+        </Link>
 
         <nav className="mainnav">
           {navItems.map((item) =>
