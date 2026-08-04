@@ -1,0 +1,141 @@
+/* ============================================================
+   AdminDashboard — 관리자 전용 회원 검증 / 거래 모니터링 대시보드
+   ============================================================ */
+
+.admin-dashboard__head {
+  margin-bottom: 24px;
+}
+
+.admin-dashboard__title {
+  margin-bottom: 6px;
+}
+
+.admin-dashboard__subtitle {
+  color: var(--color-text-muted);
+}
+
+.admin-dashboard__empty {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+/* ---- 상단 요약 카드: 3개, 가로 1:1:1 ---- */
+.admin-dashboard__summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.admin-dashboard__card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 22px;
+}
+
+.admin-dashboard__card-label {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.admin-dashboard__card-value {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.admin-dashboard__card-delta {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.admin-dashboard__card-delta--up {
+  color: var(--color-success);
+}
+
+/* ---- 사업자 인증 대기 목록 ---- */
+.admin-dashboard__section-title {
+  margin-bottom: 14px;
+}
+
+.admin-dashboard__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.admin-dashboard__table th,
+.admin-dashboard__table td {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 13.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-dashboard__table th {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--color-background);
+}
+
+.admin-dashboard__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-dashboard__row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-dashboard__approve-btn,
+.admin-dashboard__reject-btn {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-dashboard__approve-btn {
+  border: none;
+  background: var(--color-secondary);
+  color: #fff;
+}
+
+.admin-dashboard__approve-btn:hover {
+  background: var(--color-secondary-hover);
+}
+
+.admin-dashboard__reject-btn {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text-muted);
+}
+
+.admin-dashboard__reject-btn:hover {
+  background: var(--color-background);
+}
+
+.admin-dashboard__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
