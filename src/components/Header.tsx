@@ -18,20 +18,27 @@ const SEARCH_NAV: NavItem = { id: 'search', label: '상품검색', path: '/searc
 const ORDERS_NAV: NavItem = { id: 'orders', label: '주문내역', path: '/orders' }
 const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항', path: '/notice' }
 const CART_NAV: NavItem = { id: 'cart', label: '장바구니', path: '/cart' }
+const DASHBOARD_NAV: NavItem = { id: 'dashboard', label: '대시보드', path: '/admin' }
 
 const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'register', label: '상품등록', path: '/register' },
   { id: 'manage', label: '상품관리', path: '/manage' },
 ]
 
+const ADMIN_NAV: NavItem[] = [HOME_NAV, DASHBOARD_NAV]
+
 function Header() {
   const { role, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
+  const isAdmin = role === 'admin'
+
   // 구매자: 홈·상품검색·주문내역·공지사항·장바구니 / 판매자: 여기에 상품등록·상품관리가 추가된다
-  const navItems =
-    role === 'seller'
+  // 관리자 모드에서는 일반 GNB 메뉴 대신 홈·대시보드 두 가지만 좌측에 노출한다
+  const navItems = isAdmin
+    ? ADMIN_NAV
+    : role === 'seller'
       ? [HOME_NAV, SEARCH_NAV, ORDERS_NAV, ...SELLER_ONLY_NAV, NOTICE_NAV, CART_NAV]
       : [HOME_NAV, SEARCH_NAV, ORDERS_NAV, NOTICE_NAV, CART_NAV]
 
@@ -72,21 +79,29 @@ function Header() {
         </nav>
 
         <div className="header-actions">
-          <Link to="/mypage" className="link-btn">
-            마이페이지
-          </Link>
-          {isAuthenticated ? (
+          {isAdmin ? (
             <button type="button" className="link-btn" onClick={handleLogout}>
               로그아웃
             </button>
           ) : (
             <>
-              <button type="button" className="link-btn" onClick={() => navigate('/signup')}>
-                회원가입
-              </button>
-              <Link to="/login" className="link-btn">
-                로그인
+              <Link to="/mypage" className="link-btn">
+                마이페이지
               </Link>
+              {isAuthenticated ? (
+                <button type="button" className="link-btn" onClick={handleLogout}>
+                  로그아웃
+                </button>
+              ) : (
+                <>
+                  <button type="button" className="link-btn" onClick={() => navigate('/signup')}>
+                    회원가입
+                  </button>
+                  <Link to="/login" className="link-btn">
+                    로그인
+                  </Link>
+                </>
+              )}
             </>
           )}
         </div>
