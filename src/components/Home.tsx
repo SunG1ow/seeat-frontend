@@ -1,43 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import ProductCard, { type Product } from './ProductCard'
+import ProductCard from './ProductCard'
 import { useProducts } from '../context/ProductsContext'
 import { useCart } from '../context/CartContext'
-import WholesaleAveragePrice, { type WholesalePriceItem } from './WholesaleAveragePrice'
+import WholesaleAveragePrice from './WholesaleAveragePrice'
 import './Home.css'
-
-// SEEAT-_3.HTM renderPriceWidget() 참고: 어종별 첫 상품의 7일 시세 추이(trend)에서
-// 시작값 대비 최근값의 등락률을 계산한다. 최대 5개 어종만 노출한다.
-// trend 원본 값(원 단위)은 WholesaleAveragePrice의 바 높이(px, 8~52 범위)로 정규화해서 넘긴다.
-function buildWholesalePriceItems(products: Product[]): WholesalePriceItem[] {
-  const seenSpecies = new Set<string>()
-  const items: WholesalePriceItem[] = []
-
-  for (const product of products) {
-    if (seenSpecies.has(product.species)) continue
-    seenSpecies.add(product.species)
-
-    const trend = product.trend && product.trend.length > 0 ? product.trend : [product.price]
-    const currentPrice = trend[trend.length - 1]
-    const delta = currentPrice - trend[0]
-    const changePercent = trend[0] !== 0 ? Math.round((delta / trend[0]) * 1000) / 10 : 0
-
-    const max = Math.max(...trend)
-    const min = Math.min(...trend)
-    const range = max - min || 1
-    const barHeights = trend.map((value) => 8 + Math.round(((value - min) / range) * 44))
-
-    items.push({
-      name: product.species,
-      price: currentPrice.toLocaleString('ko-KR'),
-      change: `${changePercent >= 0 ? '+' : ''}${changePercent}%`,
-      trend: barHeights,
-    })
-    if (items.length === 5) break
-  }
-
-  return items
-}
 
 // SEEAT-_3.HTM noticePosts 시드 데이터 중 최신 3건 참고 (공지사항 화면과는 별개의 홈 미리보기용 더미)
 const NOTICE_PREVIEW = [
@@ -53,8 +20,6 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  const wholesalePriceItems = useMemo(() => buildWholesalePriceItems(products), [products])
-
   function flashToast(message: string) {
     setToast(message)
     window.setTimeout(() => setToast(null), 1800)
@@ -69,7 +34,7 @@ function Home() {
 
   return (
     <div className="home">
-      <WholesaleAveragePrice items={wholesalePriceItems} />
+      <WholesaleAveragePrice />
 
       <div className="home__section-head">
         <h2 className="fs-title2">실시간 위판 특가</h2>
