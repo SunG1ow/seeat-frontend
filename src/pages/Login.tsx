@@ -6,7 +6,7 @@ import './Login.css'
 // SEEAT-_3.HTM #screen-login 의 .login-tab 구조 참고 (구매자/판매자/관리자 탭 전환)
 const LOGIN_TABS: { id: UserRole; label: string }[] = [
   { id: 'buyer', label: '구매자 로그인' },
-  { id: 'seller', label: '판매자(조합) 로그인' },
+  { id: 'seller', label: '판매자(어업인) 로그인' },
   { id: 'admin', label: '관리자 로그인' },
 ]
 
@@ -18,7 +18,7 @@ function Login() {
   const [buyerEmail, setBuyerEmail] = useState('')
   const [buyerPassword, setBuyerPassword] = useState('')
 
-  const [coopName, setCoopName] = useState('')
+  const [sellerName, setSellerName] = useState('')
   const [sellerBizNumber, setSellerBizNumber] = useState('')
   const [sellerEmail, setSellerEmail] = useState('')
   const [sellerPassword, setSellerPassword] = useState('')
@@ -94,12 +94,12 @@ function Login() {
         {activeTab === 'seller' && (
           <div className="login__form">
             <div className="login__field">
-              <label>조합명</label>
+              <label>성명 / 선박명</label>
               <input
                 type="text"
-                placeholder="예: 통영수산업협동조합"
-                value={coopName}
-                onChange={(event) => setCoopName(event.target.value)}
+                placeholder="예: 김만수 선장 (해성호)"
+                value={sellerName}
+                onChange={(event) => setSellerName(event.target.value)}
               />
             </div>
             <div className="login__field">
@@ -135,7 +135,7 @@ function Login() {
               onClick={() =>
                 handleLogin({
                   email: sellerEmail,
-                  name: coopName || '판매자',
+                  name: sellerName || '판매자',
                   role: 'seller',
                   sellerVerification: { type: 'business', businessRegNumber: sellerBizNumber },
                 })

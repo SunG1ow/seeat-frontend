@@ -3,6 +3,10 @@
    출처: 디자인 초기안 v1.4 §4.1 스타일 가이드 / §4.2.1 레이아웃 규격
    ============================================================ */
 
+/* Tailwind utilities only — preflight(리셋)는 아래 자체 Reset 섹션과 중복/충돌하므로 제외한다. */
+@import 'tailwindcss/theme' layer(theme);
+@import 'tailwindcss/utilities' layer(utilities);
+
 :root {
   /* ---- §4.1.1 컬러 팔레트 ---- */
   --color-primary: #0b2f61; /* Primary · Deep Ocean Blue — 헤더, 주요 GNB, 메인 핵심 버튼 */

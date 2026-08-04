@@ -1,6 +1,6 @@
 import { useEffect, useState, type WheelEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getProductStatus } from '../components/ProductCard'
+import { getProductStatus, MANDATORY_BLOCK_MESSAGE } from '../components/ProductCard'
 import { useProducts } from '../context/ProductsContext'
 import { useCart } from '../context/CartContext'
 import './Detail.css'
@@ -67,6 +67,8 @@ function Detail() {
 
   const status = getProductStatus(product, remainMs)
   const isSoldOut = status === 'soldout'
+  // (current_stock / initial_stock) * 100 — product.remain/product.total은 각각 백엔드의
+  // current_stock/initial_stock에 대응한다.
   const percent = Math.max(0, Math.min(100, Math.round((product.remain / product.total) * 100)))
   const total = qty * product.price
 
@@ -88,6 +90,10 @@ function Detail() {
   function handlePurchase() {
     const current = product
     if (!current) return
+    if (current.mandatory) {
+      flashToast(MANDATORY_BLOCK_MESSAGE)
+      return
+    }
     if (qty > current.remain) {
       flashToast('재고보다 많은 수량은 구매할 수 없습니다')
       return
@@ -118,7 +124,8 @@ function Detail() {
           <div className="detail__thumb" aria-hidden="true">
             {product.emoji}
           </div>
-          <div className="detail__trend">
+          {/* V2 스펙: 7일 추이 그래프 — 이번 스프린트 범위에서 제외되어 숨김 처리 (코드는 유지) */}
+          <div className="detail__trend" style={{ display: 'none' }}>
             <h4 className="fs-caption">최근 7일 평균 시세 추이 (원/kg)</h4>
             <div className="detail__sparkline">
               {sparklineBars(product.trend ?? []).map((bar, index) => (
@@ -153,7 +160,7 @@ function Detail() {
             <div className="detail__stat-item">
               <div className="detail__stat-label fs-caption">잔여수량</div>
               <div className="detail__stat-value mono">
-                {product.remain} / {product.total}kg
+                {product.remain}kg 남음 · {percent}% 남음
               </div>
             </div>
             <div className="detail__stat-item">
@@ -199,11 +206,12 @@ function Detail() {
             </button>
             <button
               type="button"
-              className="detail__buy-btn"
+              className={`detail__buy-btn${product.mandatory ? ' detail__buy-btn--mandatory' : ''}`}
               disabled={isSoldOut}
+              title={product.mandatory ? MANDATORY_BLOCK_MESSAGE : undefined}
               onClick={handlePurchase}
             >
-              {isSoldOut ? '매진되었습니다' : '선착순 구매하기'}
+              {isSoldOut ? '매진되었습니다' : product.mandatory ? '직거래 불가' : '선착순 구매하기'}
             </button>
           </div>
 

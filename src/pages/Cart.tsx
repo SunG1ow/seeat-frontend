@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useCart, type CartItem } from '../context/CartContext'
 import { useProducts } from '../context/ProductsContext'
 import { useOrders } from '../context/OrdersContext'
-import type { Product } from '../components/ProductCard'
+import { MANDATORY_BLOCK_MESSAGE, type Product } from '../components/ProductCard'
 import './Cart.css'
 
 interface CartRow {
@@ -39,6 +39,7 @@ function Cart() {
   }, [items, getProduct])
 
   const total = rows.reduce((sum, row) => sum + row.subtotal, 0)
+  const hasMandatoryItem = rows.some((row) => row.product.mandatory)
 
   function flashToast(message: string) {
     setToast(message)
@@ -46,6 +47,12 @@ function Cart() {
   }
 
   function handleCheckoutConfirm() {
+    if (hasMandatoryItem) {
+      setModalOpen(false)
+      flashToast(`${MANDATORY_BLOCK_MESSAGE} 해당 상품을 장바구니에서 삭제해주세요`)
+      return
+    }
+
     const insufficient = rows.some((row) => row.item.qty > row.product.remain)
     if (insufficient) {
       setModalOpen(false)
@@ -87,6 +94,14 @@ function Cart() {
                 </div>
                 <div className="cart__item-info">
                   <b>{product.species}</b>
+                  {product.mandatory && (
+                    <span
+                      className="cart__item-badge cart__item-badge--mandatory"
+                      title={MANDATORY_BLOCK_MESSAGE}
+                    >
+                      의무위판
+                    </span>
+                  )}
                   <div className="cart__item-meta fs-caption">
                     {product.seller} · {product.storage} · {item.qty}kg
                   </div>
@@ -108,7 +123,16 @@ function Cart() {
             <span className="cart__amount mono">{won(total)}</span>
           </div>
 
-          <button type="button" className="cart__checkout-btn" onClick={() => setModalOpen(true)}>
+          {hasMandatoryItem && (
+            <p className="cart__mandatory-notice fs-caption">{MANDATORY_BLOCK_MESSAGE}</p>
+          )}
+          <button
+            type="button"
+            className="cart__checkout-btn"
+            disabled={hasMandatoryItem}
+            title={hasMandatoryItem ? MANDATORY_BLOCK_MESSAGE : undefined}
+            onClick={() => setModalOpen(true)}
+          >
             모두 구매하기
           </button>
         </>

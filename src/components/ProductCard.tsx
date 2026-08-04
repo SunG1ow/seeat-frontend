@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import './ProductCard.css'
 
 export type ProductStatus = 'onsale' | 'urgent' | 'soldout'
+
+// §요구사항 2: 의무위판 어종은 수협 등 지정 위판장을 거치지 않는 직거래(구매)가 수산업협동조합법상 금지된다.
+export const MANDATORY_BLOCK_MESSAGE = '수협 의무위판 대상 어종으로 직거래가 불가합니다'
 
 // ProductManagement.tsx(판매자 상품관리 화면)에서 판매자가 직접 지정하는 수동 판매상태.
 // 미지정(undefined)은 'onsale'과 동일하게 취급해 기존 데모 상품과 호환된다.
@@ -62,6 +65,7 @@ function won(n: number) {
 
 function ProductCard({ product, hideTimer = false, onAddToCart, onBuyNow }: ProductCardProps) {
   const [remainMs, setRemainMs] = useState(() => product.deadlineMs - Date.now())
+  const [blockedMsg, setBlockedMsg] = useState<string | null>(null)
 
   // deadlineMs 기준으로 매초 재계산 — setInterval 누적 오차를 피하기 위해 Date.now()를 다시 기준삼는다.
   useEffect(() => {
@@ -75,7 +79,19 @@ function ProductCard({ product, hideTimer = false, onAddToCart, onBuyNow }: Prod
   const isSoldOut = status === 'soldout'
   const isUrgent = status === 'urgent'
   const statusLabel = isSoldOut ? '매진' : isUrgent ? '마감임박' : '판매중'
+  // (current_stock / initial_stock) * 100 — product.remain/product.total은 각각 백엔드의
+  // current_stock/initial_stock에 대응한다.
   const percent = Math.max(0, Math.min(100, Math.round((product.remain / product.total) * 100)))
+
+  function handleBuyNowClick(event: MouseEvent) {
+    event.stopPropagation()
+    if (product.mandatory) {
+      setBlockedMsg(MANDATORY_BLOCK_MESSAGE)
+      window.setTimeout(() => setBlockedMsg(null), 2000)
+      return
+    }
+    onBuyNow?.(product)
+  }
 
   return (
     <div className="product-card" onClick={() => onBuyNow?.(product)}>
@@ -112,8 +128,7 @@ function ProductCard({ product, hideTimer = false, onAddToCart, onBuyNow }: Prod
         <div className="product-card__gauge-fill" style={{ width: `${percent}%` }} />
       </div>
       <div className="product-card__gauge-label fs-caption mono">
-        <span>{product.remain}kg 남음</span>
-        <span>{percent}%</span>
+        {product.remain}kg 남음 · {percent}% 남음
       </div>
 
       <div
@@ -140,17 +155,19 @@ function ProductCard({ product, hideTimer = false, onAddToCart, onBuyNow }: Prod
           </button>
           <button
             type="button"
-            className="product-card__btn product-card__btn--primary"
+            className={`product-card__btn product-card__btn--primary${
+              product.mandatory ? ' product-card__btn--mandatory' : ''
+            }`}
             disabled={isSoldOut}
-            onClick={(event) => {
-              event.stopPropagation()
-              onBuyNow?.(product)
-            }}
+            title={product.mandatory ? MANDATORY_BLOCK_MESSAGE : undefined}
+            onClick={handleBuyNowClick}
           >
             구매하기
           </button>
         </div>
       </div>
+
+      {blockedMsg && <div className="product-card__blocked-toast fs-caption">{blockedMsg}</div>}
     </div>
   )
 }

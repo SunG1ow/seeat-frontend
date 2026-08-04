@@ -19,9 +19,9 @@ function won(n: number) {
   return `${n.toLocaleString('ko-KR')}원`
 }
 
-// 원산지 표시는 항상 "선적항 · 조합명" 형태의 고정 문자열이며 사용자가 직접 편집할 수 없다.
+// 원산지 표시는 항상 "선적항 · 선장명" 형태의 고정 문자열이며 사용자가 직접 편집할 수 없다.
 function buildOriginLabel() {
-  return `${APPROVED_VESSEL_LICENSE.homePort} · ${APPROVED_VESSEL_LICENSE.coopName}`
+  return `${APPROVED_VESSEL_LICENSE.homePort} · ${APPROVED_VESSEL_LICENSE.captainName}`
 }
 
 function ProductRegistration() {
@@ -140,7 +140,7 @@ function ProductRegistration() {
       grade: '상',
       storage,
       region: APPROVED_VESSEL_LICENSE.homePort.replace(/항$/, ''),
-      seller: APPROVED_VESSEL_LICENSE.coopName,
+      seller: APPROVED_VESSEL_LICENSE.captainName,
       price: priceNum,
       total: totalKg,
       remain: totalKg,
@@ -160,7 +160,7 @@ function ProductRegistration() {
     <div className="register">
       <h1 className="register__title fs-title1">수산물 상품 등록</h1>
       <p className="register__subtitle fs-body2">
-        {APPROVED_VESSEL_LICENSE.coopName} · 어선 허가번호 {APPROVED_VESSEL_LICENSE.licenseNo} 기준으로
+        {APPROVED_VESSEL_LICENSE.captainName} · 어선 허가번호 {APPROVED_VESSEL_LICENSE.licenseNo} 기준으로
         등록합니다
       </p>
 

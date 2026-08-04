@@ -197,3 +197,23 @@
   color: #8b96a3;
   cursor: not-allowed;
 }
+
+/* 의무위판 어종: 재고/마감과 무관하게 직거래 자체가 불가하므로 항상 비활성 스타일로 노출한다 */
+.product-card__btn--mandatory {
+  background: #d8dde4;
+  color: #8b96a3;
+  cursor: not-allowed;
+}
+
+.product-card__btn--mandatory:hover {
+  background: #d8dde4;
+}
+
+.product-card__blocked-toast {
+  background: #fff1de;
+  color: var(--color-warning);
+  border: 1px solid #f3d9ae;
+  border-radius: 7px;
+  padding: 6px 8px;
+  text-align: center;
+}

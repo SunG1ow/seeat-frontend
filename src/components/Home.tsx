@@ -3,61 +3,40 @@ import { Link, useNavigate } from 'react-router-dom'
 import ProductCard, { type Product } from './ProductCard'
 import { useProducts } from '../context/ProductsContext'
 import { useCart } from '../context/CartContext'
+import WholesaleAveragePrice, { type WholesalePriceItem } from './WholesaleAveragePrice'
 import './Home.css'
-
-function won(n: number) {
-  return `${n.toLocaleString('ko-KR')}원`
-}
-
-interface PriceTrendItem {
-  species: string
-  currentPrice: number
-  changePercent: number
-  trend: number[]
-}
 
 // SEEAT-_3.HTM renderPriceWidget() 참고: 어종별 첫 상품의 7일 시세 추이(trend)에서
 // 시작값 대비 최근값의 등락률을 계산한다. 최대 5개 어종만 노출한다.
-function buildPriceTrends(products: Product[]): PriceTrendItem[] {
+// trend 원본 값(원 단위)은 WholesaleAveragePrice의 바 높이(px, 8~52 범위)로 정규화해서 넘긴다.
+function buildWholesalePriceItems(products: Product[]): WholesalePriceItem[] {
   const seenSpecies = new Set<string>()
-  const items: PriceTrendItem[] = []
+  const items: WholesalePriceItem[] = []
 
   for (const product of products) {
     if (seenSpecies.has(product.species)) continue
     seenSpecies.add(product.species)
 
     const trend = product.trend && product.trend.length > 0 ? product.trend : [product.price]
-    const delta = trend[trend.length - 1] - trend[0]
+    const currentPrice = trend[trend.length - 1]
+    const delta = currentPrice - trend[0]
     const changePercent = trend[0] !== 0 ? Math.round((delta / trend[0]) * 1000) / 10 : 0
 
-    items.push({ species: product.species, currentPrice: trend[trend.length - 1], changePercent, trend })
+    const max = Math.max(...trend)
+    const min = Math.min(...trend)
+    const range = max - min || 1
+    const barHeights = trend.map((value) => 8 + Math.round(((value - min) / range) * 44))
+
+    items.push({
+      name: product.species,
+      price: currentPrice.toLocaleString('ko-KR'),
+      change: `${changePercent >= 0 ? '+' : ''}${changePercent}%`,
+      trend: barHeights,
+    })
     if (items.length === 5) break
   }
 
   return items
-}
-
-function Sparkline({ trend }: { trend: number[] }) {
-  const max = Math.max(...trend)
-  const min = Math.min(...trend)
-  const range = max - min || 1
-
-  return (
-    <div className="home__sparkline">
-      {trend.map((value, index) => {
-        const height = 8 + Math.round(((value - min) / range) * 26)
-        const isLast = index === trend.length - 1
-        return (
-          <div
-            key={index}
-            className={`home__sparkline-bar${isLast ? ' home__sparkline-bar--last' : ''}`}
-            style={{ height: `${height}px` }}
-            title={won(value)}
-          />
-        )
-      })}
-    </div>
-  )
 }
 
 // SEEAT-_3.HTM noticePosts 시드 데이터 중 최신 3건 참고 (공지사항 화면과는 별개의 홈 미리보기용 더미)
@@ -74,7 +53,7 @@ function Home() {
   const [toast, setToast] = useState<string | null>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
 
-  const priceTrends = useMemo(() => buildPriceTrends(products), [products])
+  const wholesalePriceItems = useMemo(() => buildWholesalePriceItems(products), [products])
 
   function flashToast(message: string) {
     setToast(message)
@@ -90,35 +69,7 @@ function Home() {
 
   return (
     <div className="home">
-      <div className="home__section-head home__section-head--row">
-        <h2 className="fs-title2">오늘의 평균 도매 시세</h2>
-        <span className="fs-caption home__section-note">전국 수산시장 공공데이터 연동 (모의)</span>
-      </div>
-
-      <div className="home__price-widget">
-        {priceTrends.map((item) => {
-          const isUp = item.changePercent >= 0
-          return (
-            <div className="home__price-card" key={item.species}>
-              <div className="home__price-card-top">
-                <span className="home__price-card-name fs-body2">{item.species}</span>
-                <span
-                  className={`home__price-card-delta mono${
-                    isUp ? ' home__price-card-delta--up' : ' home__price-card-delta--down'
-                  }`}
-                >
-                  {isUp ? '▲' : '▼'} {Math.abs(item.changePercent)}%
-                </span>
-              </div>
-              <div className="home__price-card-value mono">
-                {won(item.currentPrice)}
-                <small>/kg</small>
-              </div>
-              <Sparkline trend={item.trend} />
-            </div>
-          )
-        })}
-      </div>
+      <WholesaleAveragePrice items={wholesalePriceItems} />
 
       <div className="home__section-head">
         <h2 className="fs-title2">실시간 위판 특가</h2>

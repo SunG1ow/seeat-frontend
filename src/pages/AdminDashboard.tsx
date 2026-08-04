@@ -10,8 +10,8 @@ interface PendingVerification {
 }
 
 const INITIAL_PENDING_VERIFICATIONS: PendingVerification[] = [
-  { id: 1, name: '거제해양수산협동조합', bizRegNumber: '607-81-52931', appliedDate: '2026.07.30' },
-  { id: 2, name: '남해멸치직판장', bizRegNumber: '108-22-77406', appliedDate: '2026.08.02' },
+  { id: 1, name: '이정훈 선장 (거제)', bizRegNumber: '607-81-52931', appliedDate: '2026.07.30' },
+  { id: 2, name: '박민수 선장 (남해)', bizRegNumber: '108-22-77406', appliedDate: '2026.08.02' },
 ]
 
 function won(n: number) {
@@ -83,7 +83,7 @@ function AdminDashboard() {
         <table className="admin-dashboard__table">
           <thead>
             <tr>
-              <th>조합명/상호</th>
+              <th>성명/선박명</th>
               <th>사업자등록번호</th>
               <th>신청일</th>
               <th></th>

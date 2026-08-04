@@ -6,9 +6,9 @@ import { getProductStatus } from '../components/ProductCard'
 import type { Product, SellerListingStatus } from '../components/ProductCard'
 import './ProductManagement.css'
 
-// 로그인 시 계정 유형(역할)만 저장하고 개별 조합명은 저장하지 않아, 이 화면에서는
-// 데모 데이터와 동일한 조합명을 "현재 로그인한 판매자"로 취급해 본인이 등록한 상품만 걸러낸다.
-const CURRENT_SELLER_NAME = '통영수산업협동조합'
+// 로그인 시 계정 유형(역할)만 저장하고 개별 판매자(개인 어업인) 성명은 저장하지 않아, 이 화면에서는
+// 데모 데이터와 동일한 판매자명을 "현재 로그인한 판매자"로 취급해 본인이 등록한 상품만 걸러낸다.
+const CURRENT_SELLER_NAME = '김만수 선장'
 
 const STATUS_OPTIONS: { id: SellerListingStatus; label: string }[] = [
   { id: 'onsale', label: '판매중' },
@@ -119,7 +119,7 @@ function ProductManagement() {
     <div className="manage">
       <h1 className="manage__title fs-title1">수산물 상품 관리</h1>
       <p className="manage__subtitle fs-body2">
-        {CURRENT_SELLER_NAME}에서 등록한 상품의 가격·재고·판매 상태를 관리합니다
+        {CURRENT_SELLER_NAME}님이 등록한 상품의 가격·재고·판매 상태를 관리합니다
       </p>
 
       <div className="manage__summary">
