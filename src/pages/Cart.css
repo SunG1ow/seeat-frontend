@@ -50,6 +50,22 @@
   font-size: 13.5px;
 }
 
+.cart__item-badge {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.cart__item-badge--mandatory {
+  background: #fff1de;
+  color: var(--color-warning);
+  border: 1px solid #f3d9ae;
+}
+
 .cart__item-meta {
   color: var(--color-text-muted);
   margin-top: 2px;
@@ -106,8 +122,23 @@
   margin-top: 4px;
 }
 
-.cart__checkout-btn:hover {
+.cart__checkout-btn:hover:not(:disabled) {
   background: var(--color-accent-hover);
+}
+
+.cart__checkout-btn:disabled {
+  background: #d8dde4;
+  color: #8b96a3;
+  cursor: not-allowed;
+}
+
+.cart__mandatory-notice {
+  color: var(--color-warning);
+  background: #fff1de;
+  border: 1px solid #f3d9ae;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 4px;
 }
 
 /* ---- 결제 확인 모달: 환불 불가 / 재고 잠금 필수 안내 ---- */

@@ -51,7 +51,7 @@ function Header() {
     <header className={`topbar topbar--${role}`}>
       <div className="ticker">
         <div className="ticker-track mono">
-          🐟 LIVE 통영 활전복 위판 12분 남음 · 부산공동어시장 참돔 신규 등록 · 여수 갯벌낙지 82% 소진 · 목포 병어 위판 마감 임박 · 완도 활전복 정산 완료
+          🐟 LIVE 통영 활전복 위판 12분 남음 · 이영호 선장 참돔 신규 등록 · 여수 갯벌낙지 82% 소진 · 목포 병어 위판 마감 임박 · 완도 활전복 정산 완료
         </div>
       </div>
 

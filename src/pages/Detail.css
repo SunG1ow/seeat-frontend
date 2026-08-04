@@ -237,6 +237,17 @@
   border-color: #d8dde4;
 }
 
+/* 의무위판 어종: 재고/마감과 무관하게 직거래 자체가 불가하므로 항상 비활성 스타일로 노출한다 */
+.detail__buy-btn--mandatory {
+  background: #d8dde4;
+  color: #8b96a3;
+  cursor: not-allowed;
+}
+
+.detail__buy-btn--mandatory:hover {
+  background: #d8dde4;
+}
+
 .detail__seller-box {
   margin-top: 20px;
   padding: 14px;
