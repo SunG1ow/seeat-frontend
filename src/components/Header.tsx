@@ -17,6 +17,7 @@ const HOME_NAV: NavItem = { id: 'home', label: '홈', path: '/' }
 const SEARCH_NAV: NavItem = { id: 'search', label: '상품검색', path: '/search' }
 const ORDERS_NAV: NavItem = { id: 'orders', label: '주문내역', path: '/orders' }
 const NOTICE_NAV: NavItem = { id: 'notice', label: '공지사항', path: '/notice' }
+const CART_NAV: NavItem = { id: 'cart', label: '장바구니', path: '/cart' }
 
 const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'register', label: '상품등록', path: '/register' },
@@ -28,11 +29,11 @@ function Header() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // 구매자: 홈·상품검색·주문내역·공지사항 / 판매자: 여기에 상품등록·상품관리가 추가된다
+  // 구매자: 홈·상품검색·주문내역·공지사항·장바구니 / 판매자: 여기에 상품등록·상품관리가 추가된다
   const navItems =
     role === 'seller'
-      ? [HOME_NAV, SEARCH_NAV, ORDERS_NAV, ...SELLER_ONLY_NAV, NOTICE_NAV]
-      : [HOME_NAV, SEARCH_NAV, ORDERS_NAV, NOTICE_NAV]
+      ? [HOME_NAV, SEARCH_NAV, ORDERS_NAV, ...SELLER_ONLY_NAV, NOTICE_NAV, CART_NAV]
+      : [HOME_NAV, SEARCH_NAV, ORDERS_NAV, NOTICE_NAV, CART_NAV]
 
   function handleLogout() {
     logout()
