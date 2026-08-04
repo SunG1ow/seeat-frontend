@@ -26,11 +26,11 @@ export interface WholesaleAveragePriceProps {
 // 백엔드 연동 전 임시 더미 데이터. 컴포넌트 로직과 분리되어 있어
 // 이 상수를 지우고 API 응답을 items prop으로 흘려보내기만 하면 된다.
 const DEFAULT_PRICE_DATA: WholesalePriceItem[] = [
-  { name: '활전복', price: '38,909', change: '+6.4%', trend: [20, 25, 30, 40, 35, 50] },
-  { name: '참돔', price: '20,209', change: '-13.2%', trend: [50, 45, 40, 35, 30, 20] },
-  { name: '갯벌낙지', price: '15,000', change: '-5.2%', trend: [35, 30, 25, 20, 15, 10] },
-  { name: '병어', price: '17,877', change: '-7.9%', trend: [30, 28, 25, 20, 15, 12] },
-  { name: '방어', price: '21,281', change: '-0.7%', trend: [25, 22, 20, 18, 15, 14] },
+  { name: '전복', price: '49,600', change: '+6.4%', trend: [20, 25, 30, 40, 35, 50] },
+  { name: '문어', price: '36,500', change: '-13.2%', trend: [50, 45, 40, 35, 30, 20] },
+  { name: '대방어', price: '35,000', change: '-5.2%', trend: [35, 30, 25, 20, 15, 10] },
+  { name: '광어', price: '27,500', change: '-7.9%', trend: [30, 28, 25, 20, 15, 12] },
+  { name: '새우', price: '25,300', change: '-0.7%', trend: [25, 22, 20, 18, 15, 14] },
 ]
 
 function ChangeBadge({ change }: { change: string }) {
