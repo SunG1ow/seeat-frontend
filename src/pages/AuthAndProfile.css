@@ -86,6 +86,7 @@
 }
 
 .authprofile__field input[type='text'],
+.authprofile__field input[type='tel'],
 .authprofile__field input[type='email'],
 .authprofile__field input[type='password'] {
   padding: 10px 12px;
