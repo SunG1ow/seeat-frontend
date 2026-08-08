@@ -17,7 +17,7 @@
   background: rgba(0, 0, 0, 0.18);
   color: #bfefef;
   font-size: var(--fs-caption);
-  padding: 6px 0;
+  padding: 4px 0;
   overflow: hidden;
   white-space: nowrap;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  padding-block: 12px;
+  padding-block: 8px;
 }
 
 .logo {

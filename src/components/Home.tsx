@@ -36,7 +36,7 @@ function Home() {
     <div className="home">
       <WholesaleAveragePrice />
 
-      <div className="home__section-head">
+      <div className="home__section-head home__section-head--tight-top">
         <h2 className="fs-title2">실시간 위판 특가</h2>
         <p className="fs-body2 home__section-sub">마감 임박 순으로 정렬된 실시간 위판 상품입니다.</p>
       </div>

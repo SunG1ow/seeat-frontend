@@ -100,7 +100,9 @@ function PriceCard({ item }: { item: WholesalePriceItem }) {
 
 function WholesaleAveragePrice({ items = DEFAULT_PRICE_DATA }: WholesaleAveragePriceProps) {
   return (
-    <section className="py-8">
+    // 상단 여백만 32px→20px(-37.5%)→16px(-20% 추가)로 축소. 하단 padding(pb-8)은
+    // 다음 섹션과의 간격을 유지하기 위해 원래 값 그대로 둔다.
+    <section className="pt-4 pb-8">
       <div className="flex items-end justify-between">
         <h2 className="text-xl font-bold text-gray-900">오늘의 평균 도매 시세</h2>
         <span className="text-sm text-gray-400">전국 수산시장 공공데이터 연동 (모의)</span>

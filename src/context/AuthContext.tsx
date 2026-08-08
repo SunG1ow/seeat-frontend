@@ -20,6 +20,8 @@ export interface AuthUser {
   name: string
   role: UserRole
   phone?: string
+  /** GET /api/v1/users/me 조회 결과 — 장바구니/주문내역 등 memberId가 필요한 API 호출에 사용 */
+  memberId?: number
   sellerVerification?: SellerVerification
 }
 

@@ -19,6 +19,15 @@
   margin-top: 0;
 }
 
+/* "오늘의 평균 도매 시세" 카드 섹션(WholesaleAveragePrice의 자체 하단 padding 32px)
+   바로 다음에 오는 "실시간 위판 특가" 제목에만 적용하는 좁은 상단 여백.
+   기본 margin-top(36px)을 그대로 쓰면 이 두 섹션 사이 간격만 68px(32+36)로 유독 넓어져서,
+   이 지점 하나에만 modifier를 얹어 36px→12px로 줄인다(합산 68px→44px, 약 -35%).
+   다른 .home__section-head(예: 공지사항 제목)의 기본 간격에는 영향 없음. */
+.home__section-head.home__section-head--tight-top {
+  margin-top: 12px;
+}
+
 .home__section-sub {
   color: var(--color-text-muted);
   margin-top: 4px;
