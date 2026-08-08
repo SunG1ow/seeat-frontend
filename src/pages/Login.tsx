@@ -16,6 +16,20 @@ interface LoginApiResponse {
   message: string
 }
 
+// GET /api/v1/users/me 응답 구조 (실제 응답 기준 — 스웨거 문서상 필드명은 memberId였지만
+// 실제 서버는 userId로 내려준다. 2026-08-08 실응답으로 확인 후 필드명을 맞춰 수정함).
+interface MeApiResponse {
+  success: boolean
+  data: {
+    userId: number
+    email: string
+    nickname?: string
+    phoneNumber?: string
+    role?: string
+  }
+  message: string
+}
+
 // 서버가 내려주는 role 문자열(대소문자·표기가 다를 수 있음)을
 // 프론트에서 쓰는 UserRole로 안전하게 변환. 알 수 없는 값이면
 // 로그인 탭에서 선택한 역할(fallback)을 그대로 사용한다.
@@ -78,7 +92,24 @@ function Login() {
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
 
-      const user: AuthUser = { email, role: toUserRole(role, fallbackRole), ...extra }
+      // 로그인 직후 /me를 연달아 호출해 memberId를 확보한다. 장바구니(GET /api/v1/cart) 등
+      // memberId가 필요한 API를 호출하려면 필수이므로, 실패해도 로그인 자체는 막지 않되
+      // localStorage에 값이 남지 않도록(이전 계정 값 재사용 방지) 명시적으로 지운다.
+      let memberId: number | undefined
+      try {
+        const meResponse = await api.get<MeApiResponse>('/api/v1/users/me')
+        memberId = meResponse.data.data.userId
+        if (typeof memberId === 'number') {
+          localStorage.setItem('memberId', String(memberId))
+        } else {
+          localStorage.removeItem('memberId')
+        }
+      } catch (meError) {
+        console.error('[login] 사용자 정보(/me) 조회 실패:', meError)
+        localStorage.removeItem('memberId')
+      }
+
+      const user: AuthUser = { email, role: toUserRole(role, fallbackRole), memberId, ...extra }
       login(user)
       navigate('/')
     } catch (error) {
