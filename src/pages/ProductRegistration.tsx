@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useProducts } from '../context/ProductsContext'
+import { createProduct, getCategories, type ApiCategory } from '../api/products'
 import { isClosedSeasonNow, SELECTABLE_SPECIES } from '../data/species'
 import { APPROVED_VESSEL_LICENSE } from '../data/sellerLicense'
 import './ProductRegistration.css'
@@ -15,10 +15,6 @@ interface ImagePreview {
   url: string
 }
 
-function won(n: number) {
-  return `${n.toLocaleString('ko-KR')}원`
-}
-
 // 원산지 표시는 항상 "선적항 · 선장명" 형태의 고정 문자열이며 사용자가 직접 편집할 수 없다.
 function buildOriginLabel() {
   return `${APPROVED_VESSEL_LICENSE.homePort} · ${APPROVED_VESSEL_LICENSE.captainName}`
@@ -26,7 +22,6 @@ function buildOriginLabel() {
 
 function ProductRegistration() {
   const { role } = useAuth()
-  const { addProduct } = useProducts()
   const navigate = useNavigate()
 
   const [images, setImages] = useState<ImagePreview[]>([])
@@ -40,16 +35,47 @@ function ProductRegistration() {
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('')
 
+  // 카테고리 목록 (GET /api/v1/products/categories) — 상품 등록 화면 진입 시 1회 조회
+  const [categories, setCategories] = useState<ApiCategory[]>([])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true)
+  const [categoryLoadError, setCategoryLoadError] = useState<string | null>(null)
+  const [categoryId, setCategoryId] = useState('')
+
   const [formError, setFormError] = useState<string | null>(null)
   const [pledgeModalOpen, setPledgeModalOpen] = useState(false)
   const [pledgeChecked, setPledgeChecked] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // 컴포넌트가 언마운트될 때만 남아 있는 미리보기 URL을 정리한다
   useEffect(() => {
     return () => {
       imagesRef.current.forEach((img) => URL.revokeObjectURL(img.url))
     }
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function fetchCategories() {
+      setIsLoadingCategories(true)
+      setCategoryLoadError(null)
+
+      const result = await getCategories(controller.signal)
+      if (controller.signal.aborted) return
+
+      if (result.ok) {
+        setCategories(result.data ?? [])
+      } else {
+        setCategoryLoadError(
+          result.message || '카테고리 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        )
+      }
+      setIsLoadingCategories(false)
+    }
+
+    fetchCategories()
+    return () => controller.abort()
   }, [])
 
   function flashToast(message: string) {
@@ -103,12 +129,14 @@ function ProductRegistration() {
     setStorage('')
     setPrice('')
     setQuantity('')
+    setCategoryId('')
   }
 
   function validate(): string | null {
     if (images.length === 0) return '상품 이미지를 최소 1장 이상 등록해주세요'
     if (!selectedSpecies) return '품목명(어종)을 선택해주세요'
     if (isClosedSeasonNow(selectedSpecies)) return '현재 포획 및 유통이 금지된 금어기 어종입니다'
+    if (!categoryId) return '카테고리를 선택해주세요'
     if (!weight || Number(weight) <= 0) return '중량을 입력해주세요'
     if (!storage) return '보관 형태를 선택해주세요'
     if (!price || Number(price) <= 0) return '가격을 입력해주세요'
@@ -127,33 +155,51 @@ function ProductRegistration() {
     setPledgeModalOpen(true)
   }
 
-  function handlePledgeConfirm() {
-    if (!pledgeChecked || !selectedSpecies || !storage) return
+  // POST /api/v1/products(multipart) 호출 → success: true일 때만 "등록 완료" 처리.
+  // success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이 없도록
+  // createProduct()의 반환값(ok)을 반드시 확인한다. request 파트 필드명이 스웨거에 없어
+  // 추측으로 넣은 상태라 400이 나올 수 있는데, 그 경우에도 화면이 멈추지 않고 에러 토스트로
+  // 안내한 뒤 모달은 열어둬 재시도할 수 있게 한다.
+  async function handlePledgeConfirm() {
+    if (!pledgeChecked || !selectedSpecies || !storage || !categoryId) return
+    if (isSubmitting) return
 
     const weightNum = Number(weight)
     const quantityNum = Number(quantity)
     const priceNum = Number(price)
-    const totalKg = Math.max(1, Math.round(weightNum * quantityNum))
 
-    addProduct({
-      species: selectedSpecies.name,
-      grade: '상',
-      storage,
-      region: APPROVED_VESSEL_LICENSE.homePort.replace(/항$/, ''),
-      seller: APPROVED_VESSEL_LICENSE.captainName,
-      price: priceNum,
-      total: totalKg,
-      remain: totalKg,
-      deadlineMs: Date.now() + 24 * 60 * 60 * 1000,
-      emoji: selectedSpecies.emoji,
-      mandatory: false,
-    })
+    setIsSubmitting(true)
+    try {
+      const result = await createProduct(
+        {
+          name: selectedSpecies.name,
+          origin: buildOriginLabel(),
+          price: priceNum,
+          weight: weightNum,
+          weightUnit: packagingUnit,
+          stockQuantity: quantityNum,
+          storageType: storage,
+          grade: '상',
+          categoryId: Number(categoryId),
+        },
+        images.map((img) => img.file),
+      )
 
-    setPledgeModalOpen(false)
-    flashToast(
-      `${selectedSpecies.name} 상품이 등록되었습니다 (${packagingUnit} · ${quantityNum}개 · 총 ${totalKg}kg / ${won(priceNum)}kg)`,
-    )
-    resetForm()
+      if (result.ok) {
+        setPledgeModalOpen(false)
+        flashToast('상품이 성공적으로 등록되었습니다')
+        resetForm()
+        navigate('/manage')
+      } else {
+        console.error('[register] 상품 등록 실패:', result.message)
+        flashToast(result.message || '상품 등록에 실패했습니다')
+      }
+    } catch (error) {
+      console.error('[register] 상품 등록 중 예외 발생:', error)
+      flashToast('상품 등록에 실패했습니다')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -236,6 +282,26 @@ function ProductRegistration() {
               고등어·참치·멸치 등 의무 위판 어종은 직거래가 법으로 금지되어 목록에 표시되지
               않습니다.
             </p>
+          </section>
+
+          <section className="register__section">
+            <h2 className="register__section-title">카테고리</h2>
+            {isLoadingCategories && (
+              <p className="register__field-hint fs-caption">카테고리 목록을 불러오는 중입니다...</p>
+            )}
+            {!isLoadingCategories && categoryLoadError && (
+              <p className="register__field-warning">{categoryLoadError}</p>
+            )}
+            {!isLoadingCategories && !categoryLoadError && (
+              <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+                <option value="">카테고리를 선택하세요</option>
+                {categories.map((category) => (
+                  <option key={category.categoryId} value={category.categoryId}>
+                    {category.categoryName}
+                  </option>
+                ))}
+              </select>
+            )}
           </section>
 
           <section className="register__section">
@@ -343,16 +409,17 @@ function ProductRegistration() {
                 type="button"
                 className="register__modal-btn register__modal-btn--cancel"
                 onClick={() => setPledgeModalOpen(false)}
+                disabled={isSubmitting}
               >
                 취소
               </button>
               <button
                 type="button"
                 className="register__modal-btn register__modal-btn--confirm"
-                disabled={!pledgeChecked}
+                disabled={!pledgeChecked || isSubmitting}
                 onClick={handlePledgeConfirm}
               >
-                서약하고 등록 완료
+                {isSubmitting ? '등록 중...' : '서약하고 등록 완료'}
               </button>
             </div>
           </div>

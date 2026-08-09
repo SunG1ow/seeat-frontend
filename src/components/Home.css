@@ -105,9 +105,19 @@
 }
 
 /* 3컬럼 배치: 뷰포트 폭에서 카드 3장이 한 줄에 보이도록 flex-basis를 계산한다 */
-.home__carousel-track .product-card {
+.home__carousel-track .product-result-card {
   flex: 0 0 calc((100% - 2 * var(--layout-grid-gap)) / 3);
   min-width: 260px;
+}
+
+.home__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.home__status--error {
+  color: var(--color-danger);
 }
 
 .home__carousel-arrow {

@@ -16,8 +16,9 @@ interface LoginApiResponse {
   message: string
 }
 
-// GET /api/v1/users/me 응답 구조 (실제 응답 기준 — 스웨거 문서상 필드명은 memberId였지만
-// 실제 서버는 userId로 내려준다. 2026-08-08 실응답으로 확인 후 필드명을 맞춰 수정함).
+// GET /api/v1/users/me 응답 구조 (실제 응답 기준). 스웨거 문서상 memberId가 보였던 것은
+// @CurrentMemberId 애너테이션(JWT에서 로그인한 사용자 ID를 자동 추출)이 파라미터로 잘못
+// 노출된 것일 뿐, 실제 응답 필드명은 DB 컬럼(user_id)을 따라 userId로 통일되어 있다.
 interface MeApiResponse {
   success: boolean
   data: {
@@ -92,24 +93,24 @@ function Login() {
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
 
-      // 로그인 직후 /me를 연달아 호출해 memberId를 확보한다. 장바구니(GET /api/v1/cart) 등
-      // memberId가 필요한 API를 호출하려면 필수이므로, 실패해도 로그인 자체는 막지 않되
+      // 로그인 직후 /me를 연달아 호출해 userId를 확보한다. 장바구니(GET /api/v1/cart) 등
+      // userId가 필요한 API를 호출하려면 필수이므로, 실패해도 로그인 자체는 막지 않되
       // localStorage에 값이 남지 않도록(이전 계정 값 재사용 방지) 명시적으로 지운다.
-      let memberId: number | undefined
+      let userId: number | undefined
       try {
         const meResponse = await api.get<MeApiResponse>('/api/v1/users/me')
-        memberId = meResponse.data.data.userId
-        if (typeof memberId === 'number') {
-          localStorage.setItem('memberId', String(memberId))
+        userId = meResponse.data.data.userId
+        if (typeof userId === 'number') {
+          localStorage.setItem('userId', String(userId))
         } else {
-          localStorage.removeItem('memberId')
+          localStorage.removeItem('userId')
         }
       } catch (meError) {
         console.error('[login] 사용자 정보(/me) 조회 실패:', meError)
-        localStorage.removeItem('memberId')
+        localStorage.removeItem('userId')
       }
 
-      const user: AuthUser = { email, role: toUserRole(role, fallbackRole), memberId, ...extra }
+      const user: AuthUser = { email, role: toUserRole(role, fallbackRole), userId, ...extra }
       login(user)
       navigate('/')
     } catch (error) {
