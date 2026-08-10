@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { api } from '../api/client'
+import { useNavigate } from 'react-router-dom'
+import { searchProducts, type ApiProduct } from '../api/products'
+import { addCartItem } from '../api/cart'
+import { useCart } from '../context/CartContext'
+import ProductResultCard from '../components/ProductResultCard'
 import './Search.css'
 
 // SEEAT-_3.HTM #screen-search 의 speciesList / regionList 데이터셋 그대로 참고
@@ -37,32 +41,6 @@ function emptyApplied(): AppliedFilters {
   return { species: new Set(), storage: new Set(), status: new Set(), region: '', min: null, max: null }
 }
 
-// GET /api/v1/products/search 응답 항목 구조 (API 명세 기준)
-interface ApiProduct {
-  productId: number
-  name: string
-  price: number
-  origin: string
-  weight: number
-  weightUnit: string
-  tags: string[]
-  thumbnailUrl: string
-}
-
-interface ProductSearchResponse {
-  content: ApiProduct[]
-  page: {
-    number: number
-    size: number
-    totalElements: number
-    totalPages: number
-  }
-}
-
-function won(n: number) {
-  return `${n.toLocaleString('ko-KR')}원`
-}
-
 // 보관 방식·판매 상태는 현재 상품검색 API 응답에 대응 데이터가 없어 필터링에는 반영하지 않는다.
 // (어종은 상품명에 포함된 문자열로, 지역은 origin 값으로 매칭한다)
 function filterAndSortProducts(products: ApiProduct[], filters: AppliedFilters, sort: SortOption) {
@@ -84,6 +62,8 @@ function filterAndSortProducts(products: ApiProduct[], filters: AppliedFilters, 
 }
 
 function Search() {
+  const navigate = useNavigate()
+  const { addItem } = useCart()
   const [draft, setDraft] = useState<DraftFilters>(emptyDraft)
   const [applied, setApplied] = useState<AppliedFilters>(emptyApplied)
   const [sort, setSort] = useState<SortOption>('popular')
@@ -92,11 +72,8 @@ function Search() {
   const [products, setProducts] = useState<ApiProduct[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-
-  // [구매하기] 클릭 시 보여줄 상세 미리보기. 실제 API productId가 데모용 목업 상품 id(1~10)와
-  // 겹칠 수 있어, 장바구니(CartContext)·상세 페이지(ProductsContext) 대신 이미 받아온 실제
-  // 데이터로 안전하게 미리보기만 제공한다.
-  const [previewProduct, setPreviewProduct] = useState<ApiProduct | null>(null)
+  // 같은 상품 카드를 연타해도 요청이 겹쳐 나가지 않도록 진행 중인 productId를 추적한다.
+  const [addingProductIds, setAddingProductIds] = useState<Set<number>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
 
   function flashToast(message: string) {
@@ -111,13 +88,8 @@ function Search() {
       setIsLoading(true)
       setLoadError(null)
       try {
-        const response = await api.get<ProductSearchResponse>('/api/v1/products/search', {
-          params: { page: 0, size: 20 },
-          signal: controller.signal,
-          // 공통 클라이언트 기본 타임아웃(10s)보다 응답이 느릴 때가 있어 이 요청만 여유를 둔다.
-          timeout: 20_000,
-        })
-        setProducts(response.data.content)
+        const content = await searchProducts({ page: 0, size: 20 }, controller.signal)
+        setProducts(content)
       } catch (error) {
         if (controller.signal.aborted) return
         console.error('[search] 상품 목록 조회 실패:', error)
@@ -132,6 +104,30 @@ function Search() {
   }, [])
 
   const results = useMemo(() => filterAndSortProducts(products, applied, sort), [products, applied, sort])
+
+  // POST /api/v1/cart/items 호출 → success: true일 때만 성공 토스트를 띄운다.
+  // success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이 없도록
+  // addCartItem()의 반환값(ok)을 반드시 확인한다.
+  async function handleAddToCart(product: ApiProduct) {
+    if (addingProductIds.has(product.productId)) return
+
+    setAddingProductIds((prev) => new Set(prev).add(product.productId))
+    try {
+      const result = await addCartItem(product.productId, 1)
+      if (result.ok) {
+        addItem(product.productId, 1)
+        flashToast(`${product.name}이(가) 장바구니에 담겼습니다`)
+      } else {
+        flashToast(result.message || '장바구니 담기에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setAddingProductIds((prev) => {
+        const next = new Set(prev)
+        next.delete(product.productId)
+        return next
+      })
+    }
+  }
 
   function toggleChip(group: ChipGroup, value: string) {
     setDraft((prev) => {
@@ -285,100 +281,18 @@ function Search() {
           {!isLoading && !loadError && results.length > 0 && (
             <div className="search__grid">
               {results.map((product) => (
-                <div className="search__result-card" key={product.productId}>
-                  <div className="search__result-thumb">
-                    <img
-                      src={product.thumbnailUrl}
-                      alt={product.name}
-                      loading="lazy"
-                      onError={(event) => {
-                        event.currentTarget.style.display = 'none'
-                      }}
-                    />
-                  </div>
-                  {product.tags?.length > 0 && (
-                    <div className="search__result-tags">
-                      {product.tags.map((tag) => (
-                        <span className="search__result-tag" key={tag}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="search__result-name fs-body1">{product.name}</div>
-                  <div className="search__result-origin fs-caption">
-                    {product.origin} · {product.weight}
-                    {product.weightUnit}
-                  </div>
-                  <div className="search__result-price fs-body1 mono">{won(product.price)}</div>
-
-                  <div className="product-card__footer product-card__footer--actions-only">
-                    <div className="product-card__actions">
-                      <button
-                        type="button"
-                        className="product-card__btn product-card__btn--outline"
-                        onClick={() =>
-                          flashToast('장바구니 연동은 준비 중입니다. 상세보기에서 확인해주세요')
-                        }
-                      >
-                        장바구니
-                      </button>
-                      <button
-                        type="button"
-                        className="product-card__btn product-card__btn--primary"
-                        onClick={() => setPreviewProduct(product)}
-                      >
-                        구매하기
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ProductResultCard
+                  key={product.productId}
+                  product={product}
+                  isAddingToCart={addingProductIds.has(product.productId)}
+                  onAddToCart={handleAddToCart}
+                  onViewDetail={(p) => navigate(`/product/${p.productId}`)}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
-
-      {previewProduct && (
-        <div className="search__preview-overlay" onClick={() => setPreviewProduct(null)}>
-          <div className="search__preview-modal" onClick={(event) => event.stopPropagation()}>
-            <div className="search__preview-thumb">
-              <img
-                src={previewProduct.thumbnailUrl}
-                alt={previewProduct.name}
-                onError={(event) => {
-                  event.currentTarget.style.display = 'none'
-                }}
-              />
-            </div>
-            {previewProduct.tags?.length > 0 && (
-              <div className="search__result-tags">
-                {previewProduct.tags.map((tag) => (
-                  <span className="search__result-tag" key={tag}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <h3 className="search__preview-name fs-title2">{previewProduct.name}</h3>
-            <div className="search__preview-origin fs-body2">
-              {previewProduct.origin} · {previewProduct.weight}
-              {previewProduct.weightUnit}
-            </div>
-            <div className="search__preview-price fs-title2 mono">{won(previewProduct.price)}</div>
-            <p className="search__preview-notice fs-caption">
-              실시간 재고·주문/결제 연동은 준비 중입니다. 곧 이용하실 수 있어요.
-            </p>
-            <button
-              type="button"
-              className="search__btn search__btn--primary"
-              onClick={() => setPreviewProduct(null)}
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
 
       {toast && <div className="search__toast fs-body2">{toast}</div>}
     </div>

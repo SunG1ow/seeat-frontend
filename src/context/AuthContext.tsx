@@ -20,6 +20,10 @@ export interface AuthUser {
   name: string
   role: UserRole
   phone?: string
+  /** GET /api/v1/users/me 조회 결과의 userId — 장바구니/주문내역 등 사용자 식별이 필요한 API 호출에 사용.
+   *  (스웨거 문서상 memberId로 보이던 것은 @CurrentMemberId 애너테이션이 파라미터로 잘못 노출된 것일 뿐,
+   *   실제 응답 필드명은 DB 컬럼(user_id)을 따라 userId로 통일되어 있다.) */
+  userId?: number
   sellerVerification?: SellerVerification
 }
 

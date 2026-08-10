@@ -1,76 +1,75 @@
 import { useEffect, useState, type WheelEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getProductStatus, MANDATORY_BLOCK_MESSAGE } from '../components/ProductCard'
-import { useProducts } from '../context/ProductsContext'
+import { getProductDetail, type ApiProductDetail } from '../api/products'
+import { addCartItem } from '../api/cart'
+import { getMyAddresses } from '../api/addresses'
+import { createOrder, payOrder } from '../api/orders'
 import { useCart } from '../context/CartContext'
 import './Detail.css'
+
+const MANDATORY_BLOCK_MESSAGE = '수협 의무위판 대상 어종으로 직거래가 불가합니다'
 
 function won(n: number) {
   return `${n.toLocaleString('ko-KR')}원`
 }
 
-function fmtTime(ms: number) {
-  if (ms <= 0) return '마감'
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':')
-}
-
-// SEEAT-_3.HTM sparklineHtml(trend, true) 참고 — 상세 화면은 큰 사이즈(최대 60px)로 그린다
-function sparklineBars(trend: number[]) {
-  const max = Math.max(...trend)
-  const min = Math.min(...trend)
-  const range = max - min || 1
-  return trend.map((value, index) => ({
-    value,
-    height: 8 + Math.round(((value - min) / range) * 52),
-    isLast: index === trend.length - 1,
-  }))
-}
-
 function Detail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getProduct, purchase } = useProducts()
   const { addItem } = useCart()
-  const product = getProduct(Number(id))
+  const productId = Number(id)
+
+  const [product, setProduct] = useState<ApiProductDetail | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
 
   const [qty, setQty] = useState(1)
-  const [remainMs, setRemainMs] = useState(() => (product ? product.deadlineMs - Date.now() : 0))
   const [toast, setToast] = useState<string | null>(null)
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
+  const [isPurchasing, setIsPurchasing] = useState(false)
 
+  // GET /api/v1/products/{productId} — 상세 화면 진입/id 변경 시 조회
   useEffect(() => {
-    if (!product) return
-    const tick = () => setRemainMs(product.deadlineMs - Date.now())
-    tick()
-    const timerId = window.setInterval(tick, 1000)
-    return () => window.clearInterval(timerId)
-  }, [product?.deadlineMs])
+    const controller = new AbortController()
+
+    if (!Number.isFinite(productId)) {
+      setIsLoading(false)
+      setNotFound(true)
+      return
+    }
+
+    async function fetchDetail() {
+      setIsLoading(true)
+      setLoadError(null)
+      setNotFound(false)
+      try {
+        const detail = await getProductDetail(productId, controller.signal)
+        setProduct(detail)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        console.error('[detail] 상품 상세 조회 실패:', error)
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 404) {
+          setNotFound(true)
+        } else if (status === 401) {
+          setLoadError('로그인 정보를 확인할 수 없습니다. 다시 로그인해주세요.')
+        } else {
+          setLoadError('상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
+      }
+    }
+
+    fetchDetail()
+    return () => controller.abort()
+  }, [productId])
 
   function flashToast(message: string) {
     setToast(message)
     window.setTimeout(() => setToast(null), 1800)
   }
-
-  if (!product) {
-    return (
-      <div className="detail__not-found fs-body1">
-        상품을 찾을 수 없습니다.
-        <button type="button" onClick={() => navigate('/')}>
-          홈으로
-        </button>
-      </div>
-    )
-  }
-
-  const status = getProductStatus(product, remainMs)
-  const isSoldOut = status === 'soldout'
-  // (current_stock / initial_stock) * 100 — product.remain/product.total은 각각 백엔드의
-  // current_stock/initial_stock에 대응한다.
-  const percent = Math.max(0, Math.min(100, Math.round((product.remain / product.total) * 100)))
-  const total = qty * product.price
 
   function changeQty(delta: number) {
     setQty((prev) => Math.max(1, prev + delta))
@@ -86,31 +85,128 @@ function Detail() {
     changeQty(event.deltaY < 0 ? 1 : -1)
   }
 
-  // TS는 클로저 안에서 앞선 `if (!product) return` 좁히기를 유지하지 않으므로 지역 변수로 다시 고정한다.
-  function handlePurchase() {
-    const current = product
-    if (!current) return
-    if (current.mandatory) {
-      flashToast(MANDATORY_BLOCK_MESSAGE)
-      return
-    }
-    if (qty > current.remain) {
-      flashToast('재고보다 많은 수량은 구매할 수 없습니다')
-      return
-    }
-    purchase(current.id, qty)
-    flashToast(`${current.species} ${qty}kg 구매가 완료되었습니다 (${won(qty * current.price)}) · 배송 준비 중`)
+  if (isLoading) {
+    return <div className="detail__status fs-body2">상품 정보를 불러오는 중입니다...</div>
   }
 
-  function handleAddToCart() {
-    const current = product
-    if (!current) return
-    if (qty > current.remain) {
+  // notFound(404)와 loadError(그 외 실패)를 먼저 각각 구분해서 보여준 다음에만 "!product"로
+  // 폴백한다. 순서를 바꾸면 401 등 다른 에러도 product가 비어 있다는 이유만으로 전부
+  // "상품을 찾을 수 없습니다"로 잘못 표시된다.
+  if (notFound) {
+    return (
+      <div className="detail__not-found fs-body1">
+        상품을 찾을 수 없습니다.
+        <button type="button" onClick={() => navigate('/')}>
+          홈으로
+        </button>
+      </div>
+    )
+  }
+
+  if (loadError || !product) {
+    return (
+      <div className="detail__status detail__status--error fs-body2">
+        {loadError ?? '상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'}
+        <button type="button" onClick={() => navigate(0)}>
+          다시 시도
+        </button>
+      </div>
+    )
+  }
+
+  // 상세 API 스펙(2026-08-10 확정)에는 잔여수량(stockQuantity)만 내려오고 초기 재고(total)는
+  // 없어 퍼센트 게이지는 계산하지 않는다. status가 품절을 뜻하는 값(SOLD_OUT)이거나 재고가
+  // 0 이하면 매진으로 취급한다.
+  const isSoldOut = product.stockQuantity <= 0 || product.status === 'SOLD_OUT'
+  const total = qty * product.price
+
+  // POST /api/v1/cart/items 호출 → success: true일 때만 성공 토스트를 띄운다.
+  // success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이 없도록
+  // addCartItem()의 반환값(ok)을 반드시 확인한다.
+  async function handleAddToCart() {
+    if (!product) return
+    if (qty > product.stockQuantity) {
       flashToast('재고보다 많은 수량은 담을 수 없습니다')
       return
     }
-    addItem(current.id, qty)
-    flashToast(`${current.species}이(가) 장바구니에 담겼습니다`)
+    if (isAddingToCart) return
+
+    setIsAddingToCart(true)
+    try {
+      const result = await addCartItem(product.productId, qty)
+      if (result.ok) {
+        addItem(product.productId, qty)
+        flashToast(`${product.name}이(가) 장바구니에 담겼습니다`)
+      } else {
+        flashToast(result.message || '장바구니 담기에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsAddingToCart(false)
+    }
+  }
+
+  // 즉시 구매: 장바구니를 거치지 않고 이 상품 1건만 주문 생성 → 결제까지 바로 진행한다.
+  // Cart.tsx의 handleCheckout()과 동일한 3단계(배송지 확보 → 주문 생성 → 결제)를 그대로 따른다.
+  // 어느 단계든 실패하면 절대 다음 단계로 진행하지 않고 정확한 에러 토스트만 띄운다.
+  async function handlePurchase() {
+    if (!product) return
+    if (qty > product.stockQuantity) {
+      flashToast('재고보다 많은 수량은 구매할 수 없습니다')
+      return
+    }
+    if (isPurchasing) return
+
+    setIsPurchasing(true)
+    try {
+      // 1) 기본 배송지 확보
+      const addressResult = await getMyAddresses()
+      if (!addressResult.ok) {
+        flashToast(addressResult.message || '배송지 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      const addresses = addressResult.data ?? []
+      if (addresses.length === 0) {
+        flashToast('등록된 배송지가 없습니다. 마이페이지에서 배송지를 먼저 등록해주세요.')
+        return
+      }
+      const defaultAddress = addresses.find((address) => address.isDefault)
+      if (!defaultAddress) {
+        flashToast('기본 배송지가 설정되어 있지 않습니다. 마이페이지에서 기본 배송지를 지정해주세요.')
+        return
+      }
+
+      // 2) 주문 생성 — 이 상품 1건만 즉시 주문(장바구니 미경유)
+      const orderResult = await createOrder({
+        items: [{ productId: product.productId, quantity: qty }],
+        addressId: defaultAddress.addressId,
+        requestMessage: '',
+      })
+      if (!orderResult.ok || !orderResult.data) {
+        flashToast(
+          orderResult.message || '주문 생성에 실패했습니다. 재고 상태를 확인 후 다시 시도해주세요.',
+        )
+        return
+      }
+
+      // 3) 결제 처리 — 실제 결제수단 선택 UI가 아직 없어 테스트용 값으로 하드코딩한다.
+      // TODO: 결제수단 선택 화면이 생기면 paymentMethod/pgTransactionId를 실제 값으로 교체할 것.
+      const paymentResult = await payOrder(orderResult.data.orderId, {
+        paymentMethod: 'CARD',
+        pgTransactionId: `TEST-${orderResult.data.orderId}-${Date.now()}`,
+      })
+      if (!paymentResult.ok) {
+        flashToast(
+          paymentResult.message ||
+            '결제 처리에 실패했습니다. 주문은 생성되었으니 주문내역에서 다시 시도해주세요.',
+        )
+        return
+      }
+
+      // 4) 전체 성공: 주문내역 화면으로 이동한다.
+      navigate('/orders')
+    } finally {
+      setIsPurchasing(false)
+    }
   }
 
   return (
@@ -120,57 +216,44 @@ function Detail() {
       </button>
 
       <div className="detail__layout">
-        <div>
-          <div className="detail__thumb" aria-hidden="true">
-            {product.emoji}
-          </div>
-          {/* V2 스펙: 7일 추이 그래프 — 이번 스프린트 범위에서 제외되어 숨김 처리 (코드는 유지) */}
-          <div className="detail__trend" style={{ display: 'none' }}>
-            <h4 className="fs-caption">최근 7일 평균 시세 추이 (원/kg)</h4>
-            <div className="detail__sparkline">
-              {sparklineBars(product.trend ?? []).map((bar, index) => (
-                <div
-                  key={index}
-                  className={`detail__sparkline-bar${bar.isLast ? ' detail__sparkline-bar--last' : ''}`}
-                  style={{ height: `${bar.height}px` }}
-                  title={won(bar.value)}
-                />
-              ))}
-            </div>
-          </div>
+        <div className="detail__thumb">
+          {product.imageUrls[0] && (
+            <img
+              src={product.imageUrls[0]}
+              alt={product.name}
+              onError={(event) => {
+                event.currentTarget.style.display = 'none'
+              }}
+            />
+          )}
         </div>
 
         <div className="detail__panel">
           <div className="detail__badges">
-            <span className="detail__badge detail__badge--region">{product.region}</span>
-            {product.mandatory && (
+            <span className="detail__badge detail__badge--region">{product.origin}</span>
+            <span className="detail__badge">{product.categoryName}</span>
+            {product.isMandatoryAuction && (
               <span className="detail__badge detail__badge--mandatory">의무위판 어종</span>
             )}
           </div>
-          <h1 className="detail__title">
-            {product.species} ({product.grade}등급)
-          </h1>
-          <div className="detail__seller fs-body2">{product.seller}</div>
+          <h1 className="detail__title">{product.name}</h1>
+          <div className="detail__seller fs-body2">{product.sellerNickname}</div>
 
           <div className="detail__stat-row">
             <div className="detail__stat-item">
               <div className="detail__stat-label fs-caption">현재가</div>
-              <div className="detail__stat-value mono">{won(product.price)}/kg</div>
+              <div className="detail__stat-value mono">
+                {won(product.price)} / {product.weight}
+                {product.weightUnit}
+              </div>
             </div>
             <div className="detail__stat-item">
               <div className="detail__stat-label fs-caption">잔여수량</div>
               <div className="detail__stat-value mono">
-                {product.remain}kg 남음 · {percent}% 남음
+                {product.stockQuantity}
+                {product.weightUnit} 남음
               </div>
             </div>
-            <div className="detail__stat-item">
-              <div className="detail__stat-label fs-caption">마감까지</div>
-              <div className="detail__big-timer mono">{isSoldOut ? '마감' : fmtTime(remainMs)}</div>
-            </div>
-          </div>
-
-          <div className="detail__gauge">
-            <div className="detail__gauge-fill" style={{ width: `${percent}%` }} />
           </div>
 
           <div className="detail__qty-control">
@@ -187,7 +270,10 @@ function Detail() {
             <button type="button" onClick={() => changeQty(1)} aria-label="수량 증가">
               +
             </button>
-            <span className="detail__storage fs-caption">{product.storage} · kg 단위</span>
+            <span className="detail__storage fs-caption">
+              {product.storageType} · {product.weight}
+              {product.weightUnit} 단위
+            </span>
           </div>
 
           <div className="detail__total-line">
@@ -199,25 +285,31 @@ function Detail() {
             <button
               type="button"
               className="detail__cart-btn"
-              disabled={isSoldOut}
+              disabled={isSoldOut || isAddingToCart}
               onClick={handleAddToCart}
             >
-              장바구니 담기
+              {isAddingToCart ? '담는 중...' : '장바구니 담기'}
             </button>
             <button
               type="button"
-              className={`detail__buy-btn${product.mandatory ? ' detail__buy-btn--mandatory' : ''}`}
-              disabled={isSoldOut}
-              title={product.mandatory ? MANDATORY_BLOCK_MESSAGE : undefined}
+              className={`detail__buy-btn${product.isMandatoryAuction ? ' detail__buy-btn--mandatory' : ''}`}
+              disabled={isSoldOut || product.isMandatoryAuction || isPurchasing}
+              title={product.isMandatoryAuction ? MANDATORY_BLOCK_MESSAGE : undefined}
               onClick={handlePurchase}
             >
-              {isSoldOut ? '매진되었습니다' : product.mandatory ? '직거래 불가' : '선착순 구매하기'}
+              {isPurchasing
+                ? '주문 처리 중...'
+                : isSoldOut
+                  ? '매진되었습니다'
+                  : product.isMandatoryAuction
+                    ? '직거래 불가'
+                    : '구매하기'}
             </button>
           </div>
 
           <div className="detail__seller-box fs-caption">
-            판매자: {product.seller} · 원산지 직송 · 위판 낙찰 즉시 발송됩니다. 교환/환불은 수산물
-            특성상 신선도 이상 시에만 가능하며, 결제 후 7일 이내 청약철회가 가능합니다.
+            판매자: {product.sellerNickname} · 원산지 직송 · 위판 낙찰 즉시 발송됩니다. 교환/환불은
+            수산물 특성상 신선도 이상 시에만 가능하며, 결제 후 7일 이내 청약철회가 가능합니다.
           </div>
         </div>
       </div>

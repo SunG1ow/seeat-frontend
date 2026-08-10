@@ -1,0 +1,106 @@
+/* ============================================================
+   ProductResultCard — GET /api/v1/products/search 연동 상품 카드
+   (Home 캐러셀 · Search 그리드 공용, ProductCard.css 톤과 통일)
+   ============================================================ */
+
+.product-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-result-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(10, 31, 61, 0.16);
+}
+
+.product-result-card__thumb {
+  height: 130px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #dceef0, #c7e4e6);
+}
+
+.product-result-card__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-result-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.product-result-card__tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: #eaf1fb;
+  color: var(--color-primary-hover);
+}
+
+.product-result-card__name {
+  color: var(--color-text);
+  font-weight: var(--fw-title2);
+}
+
+.product-result-card__origin {
+  color: var(--color-text-muted);
+}
+
+.product-result-card__price {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.product-result-card__actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.product-result-card__btn {
+  border: none;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.product-result-card__btn--outline {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.product-result-card__btn--outline:hover:not(:disabled) {
+  background: var(--color-background);
+}
+
+.product-result-card__btn--primary {
+  background: var(--color-secondary);
+  color: #fff;
+}
+
+.product-result-card__btn--primary:hover:not(:disabled) {
+  background: var(--color-secondary-hover);
+}
+
+.product-result-card__btn:disabled {
+  background: #d8dde4;
+  color: #8b96a3;
+  cursor: not-allowed;
+}

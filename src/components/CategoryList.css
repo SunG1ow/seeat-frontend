@@ -1,0 +1,51 @@
+/* ============================================================
+   CategoryList — 상품 카테고리 목록 (GET /api/v1/products/categories)
+   대분류를 카드로, 소분류를 그 안의 칩 목록으로 보여준다.
+   ============================================================ */
+
+.category-list__status {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.category-list__status--error {
+  color: var(--color-danger);
+}
+
+.category-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--layout-grid-gap);
+}
+
+.category-list__group {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+}
+
+.category-list__group-name {
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.category-list__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-list__chip {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}

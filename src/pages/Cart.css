@@ -14,6 +14,16 @@
   border-radius: var(--radius);
 }
 
+.cart__status {
+  color: var(--color-text-muted);
+  padding: 60px 0;
+  text-align: center;
+}
+
+.cart__status--error {
+  color: var(--color-danger);
+}
+
 .cart__list {
   display: flex;
   flex-direction: column;

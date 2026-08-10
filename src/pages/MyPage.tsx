@@ -2,15 +2,26 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ORDER_STAGES, useOrders } from '../context/OrdersContext'
 import { useAuth } from '../context/AuthContext'
-import { useAddresses, MAX_ADDRESS_COUNT, type Address, type AddressInput } from '../context/AddressContext'
+import { getMyAddresses, addAddress, deleteAddress, type ApiAddress } from '../api/addresses'
 import './MyPage.css'
 
-const EMPTY_ADDRESS_DRAFT: AddressInput = {
-  recipient: '',
-  phone: '',
-  zipcode: '',
-  address1: '',
-  address2: '',
+// F-06-02: 사용자당 배송지는 최대 5개까지 등록할 수 있다 (서버 제한과 별개로 프론트에서도 가드).
+const MAX_ADDRESS_COUNT = 5
+
+interface AddressDraft {
+  alias: string
+  receiverName: string
+  receiverPhone: string
+  address: string
+  isDefault: boolean
+}
+
+const EMPTY_ADDRESS_DRAFT: AddressDraft = {
+  alias: '',
+  receiverName: '',
+  receiverPhone: '',
+  address: '',
+  isDefault: false,
 }
 
 type MypageTab = 'address' | 'edit'
@@ -27,13 +38,18 @@ function MyPage() {
   const [toast, setToast] = useState<string | null>(null)
   const { orders } = useOrders()
   const { user, logout, updateProfile } = useAuth()
-  const { addresses, addAddress, updateAddress, removeAddress, setDefaultAddress } = useAddresses()
   const navigate = useNavigate()
 
+  // 배송지 목록 — GET /api/v1/users/me/addresses 실데이터 (AddressContext 목업은 걷어냄)
+  const [addresses, setAddresses] = useState<ApiAddress[]>([])
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true)
+  const [addressLoadError, setAddressLoadError] = useState<string | null>(null)
+  const [deletingAddressIds, setDeletingAddressIds] = useState<Set<number>>(new Set())
+
   const [addrFormOpen, setAddrFormOpen] = useState(false)
-  const [editingAddrId, setEditingAddrId] = useState<number | null>(null)
-  const [addrDraft, setAddrDraft] = useState<AddressInput>(EMPTY_ADDRESS_DRAFT)
+  const [addrDraft, setAddrDraft] = useState<AddressDraft>(EMPTY_ADDRESS_DRAFT)
   const [addrError, setAddrError] = useState<string | null>(null)
+  const [isSavingAddress, setIsSavingAddress] = useState(false)
 
   const [nicknameDraft, setNicknameDraft] = useState('')
   const [phoneDraft, setPhoneDraft] = useState('')
@@ -46,6 +62,38 @@ function MyPage() {
     setNicknameDraft(user?.name ?? '')
     setPhoneDraft(user?.phone ?? '')
   }, [user])
+
+  // 마이페이지 진입 시 1회 조회. GET /api/v1/users/me/addresses는 요청 파라미터가 없고,
+  // 로그인한 사용자는 Authorization 헤더(JWT)로 서버가 식별한다.
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function fetchAddresses() {
+      setIsLoadingAddresses(true)
+      setAddressLoadError(null)
+
+      if (!localStorage.getItem('accessToken')) {
+        setAddressLoadError('로그인 정보를 확인할 수 없습니다. 다시 로그인해주세요.')
+        setIsLoadingAddresses(false)
+        return
+      }
+
+      const result = await getMyAddresses(controller.signal)
+      if (controller.signal.aborted) return
+
+      if (result.ok) {
+        setAddresses(result.data ?? [])
+      } else {
+        setAddressLoadError(
+          result.message || '배송지 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        )
+      }
+      setIsLoadingAddresses(false)
+    }
+
+    fetchAddresses()
+    return () => controller.abort()
+  }, [])
 
   // 미완료된 주문/정산 건(아직 구매확정 전 단계)이 있으면 탈퇴를 제한한다
   const pendingOrders = orders.filter((order) => order.stage < ORDER_STAGES.length - 1)
@@ -95,65 +143,85 @@ function MyPage() {
     flashToast('회원 정보가 수정되었습니다')
   }
 
+  // 성공 시 목록을 다시 불러와 화면을 갱신한다(추가한 배송지가 isDefault:true면 서버가
+  // 다른 배송지의 기본 여부를 함께 조정할 수 있어, 로컬에서 임의로 병합하지 않고 다시 조회한다).
+  async function refreshAddresses() {
+    const result = await getMyAddresses()
+    if (result.ok) {
+      setAddresses(result.data ?? [])
+    } else {
+      flashToast(result.message || '배송지 목록을 새로고침하지 못했습니다.')
+    }
+  }
+
   function openAddAddressForm() {
     if (addresses.length >= MAX_ADDRESS_COUNT) {
       flashToast(`배송지는 최대 ${MAX_ADDRESS_COUNT}개까지 등록할 수 있습니다`)
       return
     }
-    setEditingAddrId(null)
     setAddrDraft(EMPTY_ADDRESS_DRAFT)
-    setAddrError(null)
-    setAddrFormOpen(true)
-  }
-
-  function openEditAddressForm(address: Address) {
-    setEditingAddrId(address.id)
-    setAddrDraft({
-      recipient: address.recipient,
-      phone: address.phone,
-      zipcode: address.zipcode,
-      address1: address.address1,
-      address2: address.address2,
-    })
     setAddrError(null)
     setAddrFormOpen(true)
   }
 
   function closeAddressForm() {
     setAddrFormOpen(false)
-    setEditingAddrId(null)
     setAddrError(null)
   }
 
-  function handleAddressSave() {
-    const { recipient, phone, zipcode, address1, address2 } = addrDraft
-    if (!recipient.trim() || !phone.trim() || !zipcode.trim() || !address1.trim() || !address2.trim()) {
+  // POST /api/v1/users/me/addresses — success:true일 때만 목록을 새로고침하고 폼을 닫는다.
+  // success:false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이 없도록
+  // addAddress()의 반환값(ok)을 반드시 확인한다.
+  async function handleAddressSave() {
+    const { alias, receiverName, receiverPhone, address, isDefault } = addrDraft
+    if (!alias.trim() || !receiverName.trim() || !receiverPhone.trim() || !address.trim()) {
       setAddrError('모든 항목을 입력해주세요')
       return
     }
+    if (isSavingAddress) return
 
-    if (editingAddrId !== null) {
-      updateAddress(editingAddrId, { recipient, phone, zipcode, address1, address2 })
-      flashToast('배송지가 수정되었습니다')
-    } else {
-      const added = addAddress({ recipient, phone, zipcode, address1, address2 })
-      if (!added) {
-        flashToast(`배송지는 최대 ${MAX_ADDRESS_COUNT}개까지 등록할 수 있습니다`)
-        return
+    setIsSavingAddress(true)
+    try {
+      const result = await addAddress({
+        alias: alias.trim(),
+        receiverName: receiverName.trim(),
+        receiverPhone: receiverPhone.trim(),
+        address: address.trim(),
+        isDefault,
+      })
+      if (result.ok) {
+        await refreshAddresses()
+        closeAddressForm()
+        flashToast('배송지가 추가되었습니다')
+      } else {
+        setAddrError(result.message || '배송지 추가에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }
-      flashToast('배송지가 추가되었습니다')
+    } finally {
+      setIsSavingAddress(false)
     }
-    closeAddressForm()
   }
 
-  function handleDeleteAddress(id: number) {
-    removeAddress(id)
-    flashToast('배송지가 삭제되었습니다')
-  }
+  // DELETE /api/v1/users/me/addresses/{addressId} — success:true일 때만 화면 상태에서
+  // 해당 배송지를 필터링해 지운다. 전체 목록을 다시 불러오지 않고 그 자리에서 즉시 반영한다.
+  async function handleDeleteAddress(addressId: number) {
+    if (deletingAddressIds.has(addressId)) return
 
-  function handleSetDefaultAddress(id: number) {
-    setDefaultAddress(id)
-    flashToast('기본 배송지로 설정되었습니다')
+    setDeletingAddressIds((prev) => new Set(prev).add(addressId))
+    try {
+      const result = await deleteAddress(addressId)
+      if (result.ok) {
+        setAddresses((prev) => prev.filter((a) => a.addressId !== addressId))
+        flashToast('배송지가 삭제되었습니다')
+      } else {
+        flashToast(result.message || '배송지 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setDeletingAddressIds((prev) => {
+        const next = new Set(prev)
+        next.delete(addressId)
+        return next
+      })
+    }
   }
 
   return (
@@ -177,49 +245,46 @@ function MyPage() {
         <div className="mypage__content">
           {activeTab === 'address' && (
             <div className="mypage__address">
-              {addresses.length === 0 ? (
+              {isLoadingAddresses && (
+                <div className="mypage__addr-status fs-body2">배송지 목록을 불러오는 중입니다...</div>
+              )}
+
+              {!isLoadingAddresses && addressLoadError && (
+                <div className="mypage__addr-status mypage__addr-status--error fs-body2">
+                  {addressLoadError}
+                </div>
+              )}
+
+              {!isLoadingAddresses && !addressLoadError && addresses.length === 0 && (
                 <div className="mypage__empty fs-body2">등록된 배송지가 없습니다</div>
-              ) : (
+              )}
+
+              {!isLoadingAddresses && !addressLoadError && addresses.length > 0 && (
                 <div className="mypage__addr-list">
                   {[...addresses]
                     .sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
                     .map((address) => (
-                      <div className="mypage__addr-card" key={address.id}>
+                      <div className="mypage__addr-card" key={address.addressId}>
                         <div className="mypage__addr-main">
                           <div className="mypage__addr-head">
-                            <b>{address.recipient}</b>
+                            <b>{address.alias}</b>
                             {address.isDefault && (
                               <span className="mypage__addr-badge">기본 배송지</span>
                             )}
                           </div>
-                          <div className="mypage__addr-phone fs-caption">{address.phone}</div>
-                          <div className="mypage__addr-line fs-body2">
-                            ({address.zipcode}) {address.address1} {address.address2}
+                          <div className="mypage__addr-phone fs-caption">
+                            {address.receiverName} · {address.receiverPhone}
                           </div>
+                          <div className="mypage__addr-line fs-body2">{address.address}</div>
                         </div>
                         <div className="mypage__addr-actions">
-                          {!address.isDefault && (
-                            <button
-                              type="button"
-                              className="mypage__addr-action-btn"
-                              onClick={() => handleSetDefaultAddress(address.id)}
-                            >
-                              기본으로 설정
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="mypage__addr-action-btn"
-                            onClick={() => openEditAddressForm(address)}
-                          >
-                            수정
-                          </button>
                           <button
                             type="button"
                             className="mypage__addr-action-btn mypage__addr-action-btn--danger"
-                            onClick={() => handleDeleteAddress(address.id)}
+                            disabled={deletingAddressIds.has(address.addressId)}
+                            onClick={() => handleDeleteAddress(address.addressId)}
                           >
-                            삭제
+                            {deletingAddressIds.has(address.addressId) ? '삭제 중...' : '삭제'}
                           </button>
                         </div>
                       </div>
@@ -227,35 +292,46 @@ function MyPage() {
                 </div>
               )}
 
-              <div className="mypage__addr-footer">
-                <button
-                  type="button"
-                  className="mypage__addr-add-btn"
-                  onClick={openAddAddressForm}
-                  disabled={addresses.length >= MAX_ADDRESS_COUNT}
-                >
-                  + 새 배송지 추가
-                </button>
-                <span className="mypage__addr-count fs-caption">
-                  {addresses.length} / {MAX_ADDRESS_COUNT}
-                  {addresses.length >= MAX_ADDRESS_COUNT && ' · 최대 등록 개수에 도달했습니다'}
-                </span>
-              </div>
+              {!isLoadingAddresses && !addressLoadError && (
+                <div className="mypage__addr-footer">
+                  <button
+                    type="button"
+                    className="mypage__addr-add-btn"
+                    onClick={openAddAddressForm}
+                    disabled={addresses.length >= MAX_ADDRESS_COUNT}
+                  >
+                    + 새 배송지 추가
+                  </button>
+                  <span className="mypage__addr-count fs-caption">
+                    {addresses.length} / {MAX_ADDRESS_COUNT}
+                    {addresses.length >= MAX_ADDRESS_COUNT && ' · 최대 등록 개수에 도달했습니다'}
+                  </span>
+                </div>
+              )}
 
               {addrFormOpen && (
                 <div className="mypage__addr-form">
-                  <h3 className="mypage__addr-form-title">
-                    {editingAddrId !== null ? '배송지 수정' : '새 배송지 추가'}
-                  </h3>
+                  <h3 className="mypage__addr-form-title">새 배송지 추가</h3>
 
                   <div className="mypage__addr-form-grid">
+                    <div className="mypage__addr-field">
+                      <label>배송지 별칭</label>
+                      <input
+                        type="text"
+                        placeholder="예: 집, 회사"
+                        value={addrDraft.alias}
+                        onChange={(event) =>
+                          setAddrDraft((prev) => ({ ...prev, alias: event.target.value }))
+                        }
+                      />
+                    </div>
                     <div className="mypage__addr-field">
                       <label>수령인 이름</label>
                       <input
                         type="text"
-                        value={addrDraft.recipient}
+                        value={addrDraft.receiverName}
                         onChange={(event) =>
-                          setAddrDraft((prev) => ({ ...prev, recipient: event.target.value }))
+                          setAddrDraft((prev) => ({ ...prev, receiverName: event.target.value }))
                         }
                       />
                     </div>
@@ -264,42 +340,33 @@ function MyPage() {
                       <input
                         type="text"
                         placeholder="010-0000-0000"
-                        value={addrDraft.phone}
+                        value={addrDraft.receiverPhone}
                         onChange={(event) =>
-                          setAddrDraft((prev) => ({ ...prev, phone: event.target.value }))
-                        }
-                      />
-                    </div>
-                    <div className="mypage__addr-field">
-                      <label>우편번호</label>
-                      <input
-                        type="text"
-                        placeholder="00000"
-                        value={addrDraft.zipcode}
-                        onChange={(event) =>
-                          setAddrDraft((prev) => ({ ...prev, zipcode: event.target.value }))
+                          setAddrDraft((prev) => ({ ...prev, receiverPhone: event.target.value }))
                         }
                       />
                     </div>
                     <div className="mypage__addr-field mypage__addr-field--full">
-                      <label>기본 주소</label>
+                      <label>주소</label>
                       <input
                         type="text"
-                        value={addrDraft.address1}
+                        placeholder="우편번호, 기본주소, 상세주소를 모두 입력해주세요"
+                        value={addrDraft.address}
                         onChange={(event) =>
-                          setAddrDraft((prev) => ({ ...prev, address1: event.target.value }))
+                          setAddrDraft((prev) => ({ ...prev, address: event.target.value }))
                         }
                       />
                     </div>
-                    <div className="mypage__addr-field mypage__addr-field--full">
-                      <label>상세 주소</label>
+                    <div className="mypage__addr-default-field mypage__addr-field--full">
                       <input
-                        type="text"
-                        value={addrDraft.address2}
+                        type="checkbox"
+                        id="addr-is-default"
+                        checked={addrDraft.isDefault}
                         onChange={(event) =>
-                          setAddrDraft((prev) => ({ ...prev, address2: event.target.value }))
+                          setAddrDraft((prev) => ({ ...prev, isDefault: event.target.checked }))
                         }
                       />
+                      <label htmlFor="addr-is-default">이 배송지를 기본 배송지로 설정</label>
                     </div>
                   </div>
 
@@ -310,6 +377,7 @@ function MyPage() {
                       type="button"
                       className="mypage__modal-btn mypage__modal-btn--cancel"
                       onClick={closeAddressForm}
+                      disabled={isSavingAddress}
                     >
                       취소
                     </button>
@@ -317,8 +385,9 @@ function MyPage() {
                       type="button"
                       className="mypage__modal-btn mypage__modal-btn--confirm"
                       onClick={handleAddressSave}
+                      disabled={isSavingAddress}
                     >
-                      저장
+                      {isSavingAddress ? '저장 중...' : '저장'}
                     </button>
                   </div>
                 </div>

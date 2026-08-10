@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 
 /**
  * 백엔드 API 공통 axios 인스턴스.
@@ -26,12 +26,30 @@ export const api = axios.create({
   },
 })
 
-// 요청 인터셉터: 로그인 토큰이 있으면 Authorization 헤더 자동 첨부
+// 요청 인터셉터: 로그인 토큰이 있으면 모든 요청에 Authorization 헤더를 자동 첨부한다.
+// (401이 계속 발생한다면 우선 이 인터셉터가 실제로 헤더를 붙이고 있는지,
+//  accessToken 자체가 비어있거나 만료된 건 아닌지부터 의심할 것.)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  const token = localStorage.getItem('accessToken')?.trim()
+
+  if (!token) {
+    // eslint-disable-next-line no-console
+    console.warn(`[api] accessToken이 없어 Authorization 헤더 없이 요청합니다: ${config.url}`)
+    return config
   }
+
+  // axios 1.x는 config.headers를 AxiosHeaders 인스턴스로 넘겨준다. 인터셉터 체이닝이나
+  // 요청 옵션에 따라 plain object가 섞여 들어오는 경우까지 방어적으로 처리해,
+  // 어떤 경로로 요청하든 Authorization 헤더가 확실히 실리도록 한다.
+  if (!config.headers) {
+    config.headers = new AxiosHeaders()
+  }
+  if (config.headers instanceof AxiosHeaders) {
+    config.headers.set('Authorization', `Bearer ${token}`)
+  } else {
+    ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
+  }
+
   return config
 })
 

@@ -19,6 +19,16 @@
   border-radius: var(--radius);
 }
 
+.orders__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.orders__status--error {
+  color: var(--color-danger);
+}
+
 .orders__timeline {
   display: flex;
   flex-direction: column;
