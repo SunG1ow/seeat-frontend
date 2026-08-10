@@ -13,15 +13,6 @@ function won(n: number) {
   return `${n.toLocaleString('ko-KR')}원`
 }
 
-function fmtTime(ms: number) {
-  if (ms <= 0) return '마감'
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  return [h, m, s].map((v) => String(v).padStart(2, '0')).join(':')
-}
-
 function Detail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -34,8 +25,6 @@ function Detail() {
   const [notFound, setNotFound] = useState(false)
 
   const [qty, setQty] = useState(1)
-  // 마감시간(deadlineMs)이 응답에 없을 수 있어(스펙 미확정), null이면 카운트다운을 아예 표시하지 않는다.
-  const [remainMs, setRemainMs] = useState<number | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [isPurchasing, setIsPurchasing] = useState(false)
@@ -76,19 +65,6 @@ function Detail() {
     fetchDetail()
     return () => controller.abort()
   }, [productId])
-
-  // deadlineMs 필드가 실제로 내려올 때만 카운트다운을 돌린다.
-  useEffect(() => {
-    const deadlineMs = product?.deadlineMs
-    if (typeof deadlineMs !== 'number') {
-      setRemainMs(null)
-      return
-    }
-    const tick = () => setRemainMs(deadlineMs - Date.now())
-    tick()
-    const timerId = window.setInterval(tick, 1000)
-    return () => window.clearInterval(timerId)
-  }, [product?.deadlineMs])
 
   function flashToast(message: string) {
     setToast(message)
@@ -138,16 +114,10 @@ function Detail() {
     )
   }
 
-  // 재고(remain/total)·마감(deadlineMs)·등급 등은 상세 API 스펙이 아직 확정되지 않아
-  // 응답에 없을 수 있다(src/api/products.ts의 ApiProductDetail 참고). 있을 때만 관련 UI를
-  // 표시하고, 없으면 "항상 구매 가능"으로 안전하게 취급한다 — 절대 임의로 매진 처리하지 않는다.
-  const hasStockInfo = typeof product.remain === 'number' && typeof product.total === 'number'
-  const isOutOfStock = typeof product.remain === 'number' && product.remain <= 0
-  const isDeadlinePassed = remainMs !== null && remainMs <= 0
-  const isSoldOut = isOutOfStock || isDeadlinePassed
-  const percent = hasStockInfo
-    ? Math.max(0, Math.min(100, Math.round(((product.remain ?? 0) / (product.total || 1)) * 100)))
-    : null
+  // 상세 API 스펙(2026-08-10 확정)에는 잔여수량(stockQuantity)만 내려오고 초기 재고(total)는
+  // 없어 퍼센트 게이지는 계산하지 않는다. status가 품절을 뜻하는 값(SOLD_OUT)이거나 재고가
+  // 0 이하면 매진으로 취급한다.
+  const isSoldOut = product.stockQuantity <= 0 || product.status === 'SOLD_OUT'
   const total = qty * product.price
 
   // POST /api/v1/cart/items 호출 → success: true일 때만 성공 토스트를 띄운다.
@@ -155,7 +125,7 @@ function Detail() {
   // addCartItem()의 반환값(ok)을 반드시 확인한다.
   async function handleAddToCart() {
     if (!product) return
-    if (typeof product.remain === 'number' && qty > product.remain) {
+    if (qty > product.stockQuantity) {
       flashToast('재고보다 많은 수량은 담을 수 없습니다')
       return
     }
@@ -180,7 +150,7 @@ function Detail() {
   // 어느 단계든 실패하면 절대 다음 단계로 진행하지 않고 정확한 에러 토스트만 띄운다.
   async function handlePurchase() {
     if (!product) return
-    if (typeof product.remain === 'number' && qty > product.remain) {
+    if (qty > product.stockQuantity) {
       flashToast('재고보다 많은 수량은 구매할 수 없습니다')
       return
     }
@@ -247,9 +217,9 @@ function Detail() {
 
       <div className="detail__layout">
         <div className="detail__thumb">
-          {product.thumbnailUrl && (
+          {product.imageUrls[0] && (
             <img
-              src={product.thumbnailUrl}
+              src={product.imageUrls[0]}
               alt={product.name}
               onError={(event) => {
                 event.currentTarget.style.display = 'none'
@@ -261,15 +231,13 @@ function Detail() {
         <div className="detail__panel">
           <div className="detail__badges">
             <span className="detail__badge detail__badge--region">{product.origin}</span>
-            {product.mandatory && (
+            <span className="detail__badge">{product.categoryName}</span>
+            {product.isMandatoryAuction && (
               <span className="detail__badge detail__badge--mandatory">의무위판 어종</span>
             )}
           </div>
-          <h1 className="detail__title">
-            {product.name}
-            {product.grade ? ` (${product.grade}등급)` : ''}
-          </h1>
-          {product.seller && <div className="detail__seller fs-body2">{product.seller}</div>}
+          <h1 className="detail__title">{product.name}</h1>
+          <div className="detail__seller fs-body2">{product.sellerNickname}</div>
 
           <div className="detail__stat-row">
             <div className="detail__stat-item">
@@ -279,30 +247,14 @@ function Detail() {
                 {product.weightUnit}
               </div>
             </div>
-            {hasStockInfo && (
-              <div className="detail__stat-item">
-                <div className="detail__stat-label fs-caption">잔여수량</div>
-                <div className="detail__stat-value mono">
-                  {product.remain}
-                  {product.weightUnit} 남음 · {percent}% 남음
-                </div>
+            <div className="detail__stat-item">
+              <div className="detail__stat-label fs-caption">잔여수량</div>
+              <div className="detail__stat-value mono">
+                {product.stockQuantity}
+                {product.weightUnit} 남음
               </div>
-            )}
-            {remainMs !== null && (
-              <div className="detail__stat-item">
-                <div className="detail__stat-label fs-caption">마감까지</div>
-                <div className="detail__big-timer mono">
-                  {isDeadlinePassed ? '마감' : fmtTime(remainMs)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {percent !== null && (
-            <div className="detail__gauge">
-              <div className="detail__gauge-fill" style={{ width: `${percent}%` }} />
             </div>
-          )}
+          </div>
 
           <div className="detail__qty-control">
             <button type="button" onClick={() => changeQty(-1)} aria-label="수량 감소">
@@ -319,8 +271,7 @@ function Detail() {
               +
             </button>
             <span className="detail__storage fs-caption">
-              {product.storage ? `${product.storage} · ` : ''}
-              {product.weight}
+              {product.storageType} · {product.weight}
               {product.weightUnit} 단위
             </span>
           </div>
@@ -341,25 +292,24 @@ function Detail() {
             </button>
             <button
               type="button"
-              className={`detail__buy-btn${product.mandatory ? ' detail__buy-btn--mandatory' : ''}`}
-              disabled={isSoldOut || product.mandatory || isPurchasing}
-              title={product.mandatory ? MANDATORY_BLOCK_MESSAGE : undefined}
+              className={`detail__buy-btn${product.isMandatoryAuction ? ' detail__buy-btn--mandatory' : ''}`}
+              disabled={isSoldOut || product.isMandatoryAuction || isPurchasing}
+              title={product.isMandatoryAuction ? MANDATORY_BLOCK_MESSAGE : undefined}
               onClick={handlePurchase}
             >
               {isPurchasing
                 ? '주문 처리 중...'
                 : isSoldOut
                   ? '매진되었습니다'
-                  : product.mandatory
+                  : product.isMandatoryAuction
                     ? '직거래 불가'
                     : '구매하기'}
             </button>
           </div>
 
           <div className="detail__seller-box fs-caption">
-            {product.seller ? `판매자: ${product.seller} · ` : ''}원산지 직송 · 위판 낙찰 즉시
-            발송됩니다. 교환/환불은 수산물 특성상 신선도 이상 시에만 가능하며, 결제 후 7일 이내
-            청약철회가 가능합니다.
+            판매자: {product.sellerNickname} · 원산지 직송 · 위판 낙찰 즉시 발송됩니다. 교환/환불은
+            수산물 특성상 신선도 이상 시에만 가능하며, 결제 후 7일 이내 청약철회가 가능합니다.
           </div>
         </div>
       </div>

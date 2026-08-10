@@ -155,11 +155,10 @@ function ProductRegistration() {
     setPledgeModalOpen(true)
   }
 
-  // POST /api/v1/products(multipart) 호출 → success: true일 때만 "등록 완료" 처리.
-  // success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이 없도록
-  // createProduct()의 반환값(ok)을 반드시 확인한다. request 파트 필드명이 스웨거에 없어
-  // 추측으로 넣은 상태라 400이 나올 수 있는데, 그 경우에도 화면이 멈추지 않고 에러 토스트로
-  // 안내한 뒤 모달은 열어둬 재시도할 수 있게 한다.
+  // POST /api/v1/products(multipart, 텍스트 필드는 쿼리 파라미터) 호출 → success: true일 때만
+  // "등록 완료" 처리. success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이
+  // 없도록 createProduct()의 반환값(ok)을 반드시 확인한다. 400 등 실패 시에도 화면이 멈추지 않고
+  // 에러 토스트로 안내한 뒤 모달은 열어둬 재시도할 수 있게 한다.
   async function handlePledgeConfirm() {
     if (!pledgeChecked || !selectedSpecies || !storage || !categoryId) return
     if (isSubmitting) return
@@ -172,15 +171,14 @@ function ProductRegistration() {
     try {
       const result = await createProduct(
         {
+          categoryId: Number(categoryId),
           name: selectedSpecies.name,
           origin: buildOriginLabel(),
+          storageType: storage,
           price: priceNum,
+          stockQuantity: quantityNum,
           weight: weightNum,
           weightUnit: packagingUnit,
-          stockQuantity: quantityNum,
-          storageType: storage,
-          grade: '상',
-          categoryId: Number(categoryId),
         },
         images.map((img) => img.file),
       )
