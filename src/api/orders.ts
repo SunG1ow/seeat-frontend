@@ -90,6 +90,41 @@ export async function payOrder(
 }
 
 // ============================================================
+// POST /api/v1/orders/{orderId}/cancel — 구매자 주문 취소 (스웨거 명세 기준, 2026-08-11 확인)
+// reason은 선택값이라 입력하지 않아도 요청 가능하다(빈 문자열/공백만 입력 시 아예 보내지 않는다).
+// ============================================================
+
+export interface CancelOrderResult {
+  orderId: number
+  orderStatus: string
+}
+
+interface CancelOrderApiResponse {
+  success: boolean
+  data: CancelOrderResult
+  message: string
+}
+
+// POST /api/v1/orders/{orderId}/cancel
+export async function cancelOrder(
+  orderId: number,
+  reason?: string,
+): Promise<ApiResult<CancelOrderResult>> {
+  try {
+    const response = await api.post<CancelOrderApiResponse>(`/api/v1/orders/${orderId}/cancel`, {
+      reason: reason?.trim() || undefined,
+    })
+    if (response.data?.success === true) {
+      return { ok: true, data: response.data.data }
+    }
+    return { ok: false, message: response.data?.message }
+  } catch (error) {
+    console.error('[orders] 주문 취소 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
+
+// ============================================================
 // GET /api/v1/users/me/orders — 내 주문 목록 조회 (스웨거 명세 기준, 2026-08-10 확인)
 // ⚠️ 다른 API들과 달리 success/data 래퍼가 없고, GET /api/v1/products/search와 동일하게
 // 응답 최상단에 바로 { content, page }가 온다. 여기서 흡수해서 createOrder/payOrder와

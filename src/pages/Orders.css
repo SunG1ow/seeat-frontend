@@ -41,7 +41,23 @@
 
 .orders__item-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
+}
+
+.orders__cancel-btn {
+  border: 1px solid var(--color-danger);
+  background: #fff;
+  color: var(--color-danger);
+  border-radius: var(--radius-input);
+  padding: 6px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.orders__cancel-btn:hover {
+  background: #fdeceb;
 }
 
 .orders__item-date {
@@ -107,4 +123,123 @@
   font-weight: 400;
   color: var(--color-text-muted);
   text-align: center;
+}
+
+/* ---- 주문 취소 확인 모달 (다른 화면의 모달 토큰과 동일) ---- */
+.orders__modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+
+.orders__modal {
+  width: 420px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.orders__modal-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.orders__modal-text {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.orders__modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.orders__modal-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--color-primary-hover);
+}
+
+.orders__modal-textarea {
+  min-height: 80px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  font-family: inherit;
+  background: #fbfcfe;
+  resize: vertical;
+}
+
+.orders__modal-textarea:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.orders__modal-error {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.orders__modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.orders__modal-btn {
+  flex: 1;
+  border-radius: var(--radius-input);
+  padding: 11px 14px;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.orders__modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.orders__modal-btn--cancel {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.orders__modal-btn--cancel:hover {
+  background: var(--color-background);
+}
+
+.orders__modal-btn--confirm {
+  border: none;
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.orders__modal-btn--confirm:hover {
+  background: #c73f3f;
+}
+
+.orders__toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow);
+  z-index: 100;
 }
