@@ -140,6 +140,130 @@
   border-radius: var(--radius-input);
 }
 
+.search__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.search__status--error {
+  color: var(--color-danger);
+}
+
+/* GET /api/v1/products/search 연동 상품 카드 (ProductCard.css의 톤과 통일) */
+.search__result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+
+.search__result-thumb {
+  height: 130px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #dceef0, #c7e4e6);
+}
+
+.search__result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.search__result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.search__result-tag {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: #eaf1fb;
+  color: var(--color-primary-hover);
+}
+
+.search__result-name {
+  color: var(--color-text);
+  font-weight: var(--fw-title2);
+}
+
+.search__result-origin {
+  color: var(--color-text-muted);
+}
+
+.search__result-price {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ---- [구매하기] 상세 미리보기 모달 (실제 상품 상세/주문 연동 준비 전 임시 화면) ---- */
+.search__preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.search__preview-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 45px rgba(10, 31, 61, 0.25);
+  padding: 26px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search__preview-thumb {
+  height: 160px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #dceef0, #c7e4e6);
+}
+
+.search__preview-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.search__preview-name {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.search__preview-origin {
+  color: var(--color-text-muted);
+}
+
+.search__preview-price {
+  color: var(--color-primary);
+}
+
+.search__preview-notice {
+  color: var(--color-text-muted);
+  background: #f5f8fb;
+  border-radius: 8px;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+
 .search__toast {
   position: fixed;
   right: 24px;

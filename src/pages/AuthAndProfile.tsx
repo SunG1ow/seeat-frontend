@@ -1,7 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth, type SellerVerificationType, type UserRole } from '../context/AuthContext'
+import type { SellerVerificationType, UserRole } from '../context/AuthContext'
+import { api } from '../api/client'
 import './AuthAndProfile.css'
+
+// POST /api/v1/auth/signup 응답 구조 (API 명세 기준)
+interface SignupApiResponse {
+  success: boolean
+  data: {
+    userId: number
+    email: string
+    role: string
+  }
+  message: string
+}
 
 // 회원가입 시 선택 가능한 등급: 일반 소비자 '구매자' / 어업인 '판매자'
 // (관리자 계정은 별도 발급 대상이라 가입 화면에서는 선택 불가)
@@ -18,11 +30,11 @@ const VERIFICATION_OPTIONS: { id: SellerVerificationType; label: string }[] = [
 ]
 
 function AuthAndProfile() {
-  const { login } = useAuth()
   const navigate = useNavigate()
 
   const [role, setRole] = useState<SignupRole>('buyer')
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -33,13 +45,14 @@ function AuthAndProfile() {
   const [permitFile, setPermitFile] = useState<File | null>(null)
 
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
 
-    if (!name || !email || !password) {
-      setError('이름, 이메일, 비밀번호를 모두 입력해주세요')
+    if (!name || !email || !password || !phone) {
+      setError('이름, 이메일, 전화번호, 비밀번호를 모두 입력해주세요')
       return
     }
     if (password !== passwordConfirm) {
@@ -55,19 +68,29 @@ function AuthAndProfile() {
       return
     }
 
-    login({
-      email,
-      name,
-      role,
-      sellerVerification:
-        role === 'seller'
-          ? verificationType === 'business'
-            ? { type: 'business', businessRegNumber }
-            : { type: 'vessel', vesselRegNumber, permitFileName: permitFile?.name }
-          : undefined,
-    })
+    setIsSubmitting(true)
+    try {
+      await api.post<SignupApiResponse>('/api/v1/auth/signup', {
+        email,
+        password,
+        // 백엔드 role enum은 대문자('BUYER'/'SELLER')를 요구함
+        role: role.toUpperCase(),
+        nickname: name,
+        phoneNumber: phone,
+      })
 
-    navigate('/mypage')
+      alert('회원가입이 완료되었습니다.')
+      navigate('/login')
+    } catch (err) {
+      console.error('[signup] 회원가입 실패:', err)
+      const serverMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      const message = serverMessage || '회원가입에 실패했습니다. 입력하신 정보를 다시 확인해주세요.'
+      setError(message)
+      alert(message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -109,6 +132,15 @@ function AuthAndProfile() {
               placeholder="홍길동"
               value={name}
               onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+          <div className="authprofile__field">
+            <label>전화번호</label>
+            <input
+              type="tel"
+              placeholder="010-0000-0000"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
             />
           </div>
           <div className="authprofile__field">
@@ -205,7 +237,7 @@ function AuthAndProfile() {
 
           {error && <p className="authprofile__error fs-caption">{error}</p>}
 
-          <button type="submit" className="authprofile__submit">
+          <button type="submit" className="authprofile__submit" disabled={isSubmitting}>
             {role === 'seller' ? '판매자로 가입하기' : '구매자로 가입하기'}
           </button>
         </div>

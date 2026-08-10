@@ -1,7 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, type AuthUser, type UserRole } from '../context/AuthContext'
+import { api } from '../api/client'
 import './Login.css'
+
+// POST /api/v1/auth/login 응답 구조 (API 명세 기준)
+interface LoginApiResponse {
+  success: boolean
+  data: {
+    accessToken: string
+    refreshToken: string
+    expiresIn: number
+    role: string
+  }
+  message: string
+}
+
+// 서버가 내려주는 role 문자열(대소문자·표기가 다를 수 있음)을
+// 프론트에서 쓰는 UserRole로 안전하게 변환. 알 수 없는 값이면
+// 로그인 탭에서 선택한 역할(fallback)을 그대로 사용한다.
+function toUserRole(role: string, fallback: UserRole): UserRole {
+  const normalized = role?.toLowerCase()
+  if (normalized === 'buyer' || normalized === 'seller' || normalized === 'admin') {
+    return normalized
+  }
+  return fallback
+}
 
 // SEEAT-_3.HTM #screen-login 의 .login-tab 구조 참고 (구매자/판매자/관리자 탭 전환)
 const LOGIN_TABS: { id: UserRole; label: string }[] = [
@@ -27,11 +51,42 @@ function Login() {
   const [adminPassword, setAdminPassword] = useState('')
   const [adminOtp, setAdminOtp] = useState('')
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   // §4.2.4: 이메일/비밀번호로 로그인하면 선택된 역할이 AuthContext(전역 상태)에
   // 저장되어 구매자/판매자/관리자 모드가 자연스럽게 전환된다.
-  function handleLogin(user: AuthUser) {
-    login(user)
-    navigate('/')
+  // POST /api/v1/auth/login 호출 → 토큰 저장 → 메인 화면 이동까지 처리한다.
+  async function handleLogin(
+    email: string,
+    password: string,
+    fallbackRole: UserRole,
+    extra: Omit<AuthUser, 'email' | 'role'>,
+  ) {
+    if (!email || !password) {
+      alert('아이디(이메일)와 비밀번호를 입력해주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const response = await api.post<LoginApiResponse>('/api/v1/auth/login', {
+        email,
+        password,
+      })
+      const { accessToken, refreshToken, role } = response.data.data
+
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
+
+      const user: AuthUser = { email, role: toUserRole(role, fallbackRole), ...extra }
+      login(user)
+      navigate('/')
+    } catch (error) {
+      console.error('[login] 로그인 실패:', error)
+      alert('아이디 또는 비밀번호가 올바르지 않습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -78,11 +133,10 @@ function Login() {
             <button
               type="button"
               className="login__submit login__submit--primary"
+              disabled={isSubmitting}
               onClick={() =>
-                handleLogin({
-                  email: buyerEmail,
+                handleLogin(buyerEmail, buyerPassword, 'buyer', {
                   name: buyerEmail.split('@')[0] || '구매자',
-                  role: 'buyer',
                 })
               }
             >
@@ -132,11 +186,10 @@ function Login() {
             <button
               type="button"
               className="login__submit login__submit--coral"
+              disabled={isSubmitting}
               onClick={() =>
-                handleLogin({
-                  email: sellerEmail,
+                handleLogin(sellerEmail, sellerPassword, 'seller', {
                   name: sellerName || '판매자',
-                  role: 'seller',
                   sellerVerification: { type: 'business', businessRegNumber: sellerBizNumber },
                 })
               }
@@ -178,11 +231,10 @@ function Login() {
             <button
               type="button"
               className="login__submit login__submit--outline"
+              disabled={isSubmitting}
               onClick={() =>
-                handleLogin({
-                  email: adminId,
+                handleLogin(adminId, adminPassword, 'admin', {
                   name: '관리자',
-                  role: 'admin',
                 })
               }
             >
