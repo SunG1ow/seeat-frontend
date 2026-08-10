@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ORDER_STAGES, useOrders } from '../context/OrdersContext'
 import { useAuth } from '../context/AuthContext'
 import { getMyAddresses, addAddress, deleteAddress, type ApiAddress } from '../api/addresses'
+import { updateMemberProfile, changeMemberPassword, withdrawMember } from '../api/users'
 import './MyPage.css'
 
 // F-06-02: 사용자당 배송지는 최대 5개까지 등록할 수 있다 (서버 제한과 별개로 프론트에서도 가드).
@@ -53,9 +54,19 @@ function MyPage() {
 
   const [nicknameDraft, setNicknameDraft] = useState('')
   const [phoneDraft, setPhoneDraft] = useState('')
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
-  const [profileError, setProfileError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [isSavingPassword, setIsSavingPassword] = useState(false)
+
+  const [withdrawPassword, setWithdrawPassword] = useState('')
+  const [withdrawReason, setWithdrawReason] = useState('')
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
 
   // 로그인한 사용자 정보가 바뀔 때(로그인/로그아웃 포함)마다 수정 폼 초기값을 동기화한다
   useEffect(() => {
@@ -104,43 +115,113 @@ function MyPage() {
     window.setTimeout(() => setToast(null), 1800)
   }
 
-  function handleWithdraw() {
+  function openWithdrawModal() {
+    setWithdrawPassword('')
+    setWithdrawReason('')
+    setWithdrawError(null)
+    setWithdrawModalOpen(true)
+  }
+
+  function closeWithdrawModal() {
+    setWithdrawModalOpen(false)
+    setWithdrawError(null)
+  }
+
+  // DELETE /api/v1/users/me 호출 → success: true일 때만 로그아웃/페이지 이동 등 후속 처리를 한다.
+  // 실패(catch 포함)하면 절대 탈퇴된 것처럼 처리하지 않고 모달에 에러만 보여준다.
+  async function handleWithdraw() {
     if (hasPendingOrders) {
-      setWithdrawModalOpen(false)
+      closeWithdrawModal()
       flashToast(`미완료된 주문/정산 건이 ${pendingOrders.length}건 있어 탈퇴할 수 없습니다`)
       return
     }
+    if (!withdrawPassword) {
+      setWithdrawError('비밀번호를 입력해주세요')
+      return
+    }
+    if (isWithdrawing) return
 
-    logout()
-    setWithdrawModalOpen(false)
-    flashToast('회원 탈퇴가 완료되었습니다')
-    navigate('/')
+    setIsWithdrawing(true)
+    try {
+      const result = await withdrawMember({
+        password: withdrawPassword,
+        reason: withdrawReason.trim() || undefined,
+      })
+      if (result.ok) {
+        closeWithdrawModal()
+        logout()
+        flashToast('회원 탈퇴가 완료되었습니다')
+        navigate('/login')
+      } else {
+        setWithdrawError(result.message || '회원 탈퇴에 실패했습니다. 비밀번호를 확인해주세요.')
+      }
+    } finally {
+      setIsWithdrawing(false)
+    }
   }
 
-  function handleProfileSave() {
+  // PUT /api/v1/users/me 호출 → success: true일 때만 화면(AuthContext)에 반영하고 성공 토스트를
+  // 띄운다. success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이지 않도록
+  // updateMemberProfile()의 반환값(ok)을 반드시 확인한다.
+  async function handleProfileSave() {
     if (!user) return
-
     if (!nicknameDraft.trim()) {
       setProfileError('닉네임을 입력해주세요')
       return
     }
-    // 비밀번호 변경은 선택 사항: 두 필드가 모두 비어 있으면 비밀번호는 그대로 둔다
-    if (newPassword || newPasswordConfirm) {
-      if (newPassword.length < 8) {
-        setProfileError('새 비밀번호는 8자 이상 입력해주세요')
-        return
-      }
-      if (newPassword !== newPasswordConfirm) {
-        setProfileError('새 비밀번호가 일치하지 않습니다')
-        return
-      }
-    }
+    if (isSavingProfile) return
 
-    updateProfile({ name: nicknameDraft.trim(), phone: phoneDraft.trim() })
-    setNewPassword('')
-    setNewPasswordConfirm('')
     setProfileError(null)
-    flashToast('회원 정보가 수정되었습니다')
+    setIsSavingProfile(true)
+    try {
+      const result = await updateMemberProfile({
+        nickname: nicknameDraft.trim(),
+        phoneNumber: phoneDraft.trim(),
+      })
+      if (result.ok && result.data) {
+        updateProfile({ name: result.data.nickname, phone: result.data.phoneNumber })
+        flashToast('회원 정보가 수정되었습니다')
+      } else {
+        setProfileError(result.message || '회원정보 수정에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  // PUT /api/v1/users/me/password 호출 → success: true일 때만 성공 토스트를 띄우고 입력값을
+  // 비운다. 회원정보 수정과는 별개의 API라 저장 버튼도 분리해, 한쪽이 실패해도 다른 쪽 성공
+  // 여부가 뒤섞이지 않게 한다.
+  async function handlePasswordChange() {
+    if (!currentPassword) {
+      setPasswordError('현재 비밀번호를 입력해주세요')
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('새 비밀번호는 8자 이상 입력해주세요')
+      return
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError('새 비밀번호가 일치하지 않습니다')
+      return
+    }
+    if (isSavingPassword) return
+
+    setPasswordError(null)
+    setIsSavingPassword(true)
+    try {
+      const result = await changeMemberPassword({ currentPassword, newPassword })
+      if (result.ok) {
+        setCurrentPassword('')
+        setNewPassword('')
+        setNewPasswordConfirm('')
+        flashToast('비밀번호가 변경되었습니다')
+      } else {
+        setPasswordError(result.message || '비밀번호 변경에 실패했습니다. 현재 비밀번호를 확인해주세요.')
+      }
+    } finally {
+      setIsSavingPassword(false)
+    }
   }
 
   // 성공 시 목록을 다시 불러와 화면을 갱신한다(추가한 배송지가 isDefault:true면 서버가
@@ -447,11 +528,33 @@ function MyPage() {
                         />
                       </div>
                     )}
+                  </div>
+
+                  {profileError && <p className="mypage__account-error fs-body2">{profileError}</p>}
+
+                  <button
+                    type="button"
+                    className="mypage__account-save-btn"
+                    onClick={handleProfileSave}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? '저장 중...' : '회원정보 저장'}
+                  </button>
+
+                  <div className="mypage__account-form">
+                    <div className="mypage__account-field">
+                      <label>현재 비밀번호</label>
+                      <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(event) => setCurrentPassword(event.target.value)}
+                      />
+                    </div>
                     <div className="mypage__account-field">
                       <label>새 비밀번호</label>
                       <input
                         type="password"
-                        placeholder="8자 이상 입력 (변경 시에만)"
+                        placeholder="8자 이상 입력"
                         value={newPassword}
                         onChange={(event) => setNewPassword(event.target.value)}
                       />
@@ -466,10 +569,15 @@ function MyPage() {
                     </div>
                   </div>
 
-                  {profileError && <p className="mypage__account-error fs-body2">{profileError}</p>}
+                  {passwordError && <p className="mypage__account-error fs-body2">{passwordError}</p>}
 
-                  <button type="button" className="mypage__account-save-btn" onClick={handleProfileSave}>
-                    수정 완료
+                  <button
+                    type="button"
+                    className="mypage__account-save-btn"
+                    onClick={handlePasswordChange}
+                    disabled={isSavingPassword}
+                  >
+                    {isSavingPassword ? '변경 중...' : '비밀번호 변경'}
                   </button>
                 </>
               ) : (
@@ -477,11 +585,7 @@ function MyPage() {
               )}
 
               <div className="mypage__withdraw-block">
-                <button
-                  type="button"
-                  className="mypage__withdraw-btn"
-                  onClick={() => setWithdrawModalOpen(true)}
-                >
+                <button type="button" className="mypage__withdraw-btn" onClick={openWithdrawModal}>
                   회원 탈퇴
                 </button>
               </div>
@@ -491,7 +595,7 @@ function MyPage() {
       </div>
 
       {withdrawModalOpen && (
-        <div className="mypage__modal-overlay" onClick={() => setWithdrawModalOpen(false)}>
+        <div className="mypage__modal-overlay" onClick={closeWithdrawModal}>
           <div className="mypage__modal" onClick={(event) => event.stopPropagation()}>
             <h3 className="mypage__modal-title">회원 탈퇴</h3>
 
@@ -501,7 +605,28 @@ function MyPage() {
                 구매확정된 이후 다시 시도해주세요.
               </p>
             ) : (
-              <p className="mypage__modal-text">정말 탈퇴하시겠습니까? 탈퇴 후에는 되돌릴 수 없습니다.</p>
+              <>
+                <p className="mypage__modal-text">정말 탈퇴하시겠습니까? 탈퇴 후에는 되돌릴 수 없습니다.</p>
+
+                <div className="mypage__account-field">
+                  <label>비밀번호</label>
+                  <input
+                    type="password"
+                    value={withdrawPassword}
+                    onChange={(event) => setWithdrawPassword(event.target.value)}
+                  />
+                </div>
+                <div className="mypage__account-field">
+                  <label>탈퇴 사유 (선택)</label>
+                  <input
+                    type="text"
+                    value={withdrawReason}
+                    onChange={(event) => setWithdrawReason(event.target.value)}
+                  />
+                </div>
+
+                {withdrawError && <p className="mypage__account-error fs-body2">{withdrawError}</p>}
+              </>
             )}
 
             <p className="mypage__modal-notice fs-caption">
@@ -513,7 +638,8 @@ function MyPage() {
               <button
                 type="button"
                 className="mypage__modal-btn mypage__modal-btn--cancel"
-                onClick={() => setWithdrawModalOpen(false)}
+                onClick={closeWithdrawModal}
+                disabled={isWithdrawing}
               >
                 취소
               </button>
@@ -521,9 +647,9 @@ function MyPage() {
                 type="button"
                 className="mypage__modal-btn mypage__modal-btn--confirm"
                 onClick={handleWithdraw}
-                disabled={hasPendingOrders}
+                disabled={hasPendingOrders || isWithdrawing}
               >
-                탈퇴하기
+                {isWithdrawing ? '탈퇴 처리 중...' : '탈퇴하기'}
               </button>
             </div>
           </div>
