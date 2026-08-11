@@ -144,11 +144,20 @@ export async function getProductDetail(
 }
 
 // ============================================================
-// POST /api/v1/products — 판매자 상품 등록 (2026-08-10 스웨거 확정)
-// 텍스트 필드는 JSON 바디가 아니라 Query Parameter로 전달하고, Request Body(multipart/form-data)에는
-// images(파일 배열)만 담는다.
-//   - 필수 쿼리: categoryId(number), name, origin, storageType, price(number), stockQuantity(number)
-//   - 선택 쿼리: weight(number), weightUnit, isMandatoryAuction(boolean), tags(string 배열)
+// POST /api/v1/products — 판매자 상품 등록
+// 백엔드 컨트롤러 시그니처(API 담당자 확인, 2026-08-11):
+//   @PostMapping(consumes = MULTIPART_FORM_DATA_VALUE)
+//   createProduct(@CurrentMemberId Long sellerId,
+//                 @Valid @ModelAttribute ProductCreateRequest request,
+//                 @RequestParam List<MultipartFile> images)
+// → 상품 정보는 JSON request 파트가 아니라 @ModelAttribute로 바인딩되고, images는 별도 파일
+//   배열 파트로 전달된다. @ModelAttribute는 Servlet이 병합해주는 요청 파라미터(쿼리스트링 +
+//   멀티파트 폼 필드)를 가리지 않고 그대로 바인딩하므로, 기존처럼 상품 정보를 axios params(쿼리
+//   스트링)로, images만 multipart 파일 파트로 보내는 방식을 그대로 유지해도 정상 바인딩된다 —
+//   JSON request 파트로 바꿀 필요 없음.
+//   - 필수: categoryId(number), name, origin, storageType, price(number), stockQuantity(number)
+//   - 선택: weight(number), weightUnit, isMandatoryAuction(boolean), tags(string 배열),
+//           auctionDeadline(LocalDateTime 문자열, "YYYY-MM-DDTHH:mm:ss"), description(string)
 // ============================================================
 
 export interface CreateProductRequest {
@@ -162,6 +171,9 @@ export interface CreateProductRequest {
   weightUnit?: string
   isMandatoryAuction?: boolean
   tags?: string[]
+  /** LocalDateTime 문자열, "YYYY-MM-DDTHH:mm:ss" 형식(예: 2026-08-15T10:00:00). 선택값. */
+  auctionDeadline?: string
+  description?: string
 }
 
 export interface CreateProductResult {
@@ -177,7 +189,7 @@ interface CreateProductApiResponse {
 }
 
 // POST /api/v1/products
-// - 텍스트 필드: Query Parameter(?categoryId=...&name=...)
+// - 텍스트 필드: Query Parameter(?categoryId=...&name=...) — @ModelAttribute가 그대로 바인딩
 // - Request Body: multipart/form-data, "images" 파트(파일 배열)만 포함
 // Content-Type 헤더는 axios/브라우저가 FormData를 보고 boundary까지 포함해 자동으로 채우므로
 // 여기서 직접 지정하지 않는다(직접 지정하면 boundary가 빠져 오히려 요청이 깨진다).
@@ -203,6 +215,9 @@ export async function createProduct(
     if (request.weightUnit !== undefined) params.weightUnit = request.weightUnit
     if (request.isMandatoryAuction !== undefined) params.isMandatoryAuction = request.isMandatoryAuction
     if (request.tags !== undefined && request.tags.length > 0) params.tags = request.tags
+    // 둘 다 선택값 — 값이 없으면(undefined) 파라미터 자체를 보내지 않는다(기존 선택 필드들과 동일한 컨벤션).
+    if (request.auctionDeadline !== undefined) params.auctionDeadline = request.auctionDeadline
+    if (request.description !== undefined) params.description = request.description
 
     const response = await api.post<CreateProductApiResponse>('/api/v1/products', formData, {
       params,

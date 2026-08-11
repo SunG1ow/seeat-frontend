@@ -20,6 +20,15 @@ function buildOriginLabel() {
   return `${APPROVED_VESSEL_LICENSE.homePort} · ${APPROVED_VESSEL_LICENSE.captainName}`
 }
 
+// <input type="datetime-local"> 값("YYYY-MM-DDTHH:mm")을 백엔드가 요구하는 LocalDateTime
+// 문자열("YYYY-MM-DDTHH:mm:ss")로 변환한다. 비어있으면 선택 필드이므로 undefined를 반환해
+// createProduct()가 아예 파라미터를 보내지 않게 한다.
+function datetimeLocalInputToIso(value: string): string | undefined {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  return trimmed.length === 16 ? `${trimmed}:00` : trimmed
+}
+
 function ProductRegistration() {
   const { role } = useAuth()
   const navigate = useNavigate()
@@ -34,6 +43,9 @@ function ProductRegistration() {
   const [storage, setStorage] = useState<(typeof STORAGE_OPTIONS)[number] | ''>('')
   const [price, setPrice] = useState('')
   const [quantity, setQuantity] = useState('')
+  // 위판 마감시간 / 상세 설명 — 둘 다 선택 입력 (ProductCreateRequest 선택 필드)
+  const [auctionDeadline, setAuctionDeadline] = useState('')
+  const [description, setDescription] = useState('')
 
   // 카테고리 목록 (GET /api/v1/products/categories) — 상품 등록 화면 진입 시 1회 조회
   const [categories, setCategories] = useState<ApiCategory[]>([])
@@ -130,6 +142,8 @@ function ProductRegistration() {
     setPrice('')
     setQuantity('')
     setCategoryId('')
+    setAuctionDeadline('')
+    setDescription('')
   }
 
   function validate(): string | null {
@@ -179,6 +193,8 @@ function ProductRegistration() {
           stockQuantity: quantityNum,
           weight: weightNum,
           weightUnit: packagingUnit,
+          auctionDeadline: datetimeLocalInputToIso(auctionDeadline),
+          description: description.trim() || undefined,
         },
         images.map((img) => img.file),
       )
@@ -375,6 +391,25 @@ function ProductRegistration() {
                 onChange={(event) => setQuantity(event.target.value)}
               />
             </div>
+          </section>
+
+          <section className="register__section">
+            <h2 className="register__section-title">위판 마감시간 (선택)</h2>
+            <input
+              type="datetime-local"
+              value={auctionDeadline}
+              onChange={(event) => setAuctionDeadline(event.target.value)}
+            />
+          </section>
+
+          <section className="register__section">
+            <h2 className="register__section-title">상품 상세 설명 (선택)</h2>
+            <textarea
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="상품에 대한 상세 설명을 입력하세요"
+            />
           </section>
 
           {formError && <p className="register__error fs-body2">{formError}</p>}
