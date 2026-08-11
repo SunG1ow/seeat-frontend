@@ -125,6 +125,45 @@ export async function cancelOrder(
 }
 
 // ============================================================
+// GET /api/v1/orders/{orderId}/status-history — 주문 상태 변경 이력 조회 (2026-08-11 실 API 확인)
+// success/data/message 래퍼이며 data는 배열(페이지네이션 없음). statusValue는 스웨거에 enum이
+// 명시돼 있지 않으므로(다른 status 필드들과 동일) 임의로 라벨을 매핑하지 않고 원본 문자열을 그대로 쓴다.
+// 실제 호출 확인: orderId=46 → [{historyId, statusValue:"PAYMENT_PENDING", changedAt}, {..."PAYMENT_COMPLETED"...}]
+// ============================================================
+
+export interface OrderStatusHistoryItem {
+  historyId: number
+  statusValue: string
+  changedAt: string
+}
+
+interface OrderStatusHistoryApiResponse {
+  success: boolean
+  data: OrderStatusHistoryItem[]
+  message: string
+}
+
+// GET /api/v1/orders/{orderId}/status-history
+export async function getOrderStatusHistory(
+  orderId: number,
+  signal?: AbortSignal,
+): Promise<ApiResult<OrderStatusHistoryItem[]>> {
+  try {
+    const response = await api.get<OrderStatusHistoryApiResponse>(
+      `/api/v1/orders/${orderId}/status-history`,
+      { signal },
+    )
+    if (response.data?.success === true) {
+      return { ok: true, data: response.data.data ?? [] }
+    }
+    return { ok: false, message: response.data?.message }
+  } catch (error) {
+    console.error('[orders] 주문 상태 이력 조회 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
+
+// ============================================================
 // GET /api/v1/users/me/orders — 내 주문 목록 조회 (스웨거 명세 기준, 2026-08-10 확인)
 // ⚠️ 다른 API들과 달리 success/data 래퍼가 없고, GET /api/v1/products/search와 동일하게
 // 응답 최상단에 바로 { content, page }가 온다. 여기서 흡수해서 createOrder/payOrder와

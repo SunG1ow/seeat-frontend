@@ -125,6 +125,48 @@
   text-align: center;
 }
 
+/* ---- 상태 이력 보기 (GET /orders/{id}/status-history, 카드 내 인라인 확장) ---- */
+.orders__history-toggle {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 0 0;
+}
+
+.orders__history-toggle:hover {
+  text-decoration: underline;
+}
+
+.orders__history {
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: var(--color-background);
+  border-radius: var(--radius-input);
+}
+
+.orders__history-status {
+  color: var(--color-text-muted);
+}
+
+.orders__history-status--error {
+  color: var(--color-danger);
+}
+
+.orders__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.orders__history-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-text-muted);
+}
+
 /* ---- 주문 취소 확인 모달 (다른 화면의 모달 토큰과 동일) ---- */
 .orders__modal-overlay {
   position: fixed;
