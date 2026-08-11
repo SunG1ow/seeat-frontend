@@ -1,5 +1,6 @@
 /* ============================================================
    SettlementManagement — 판매자 전용 정산 및 매출 조회 화면 (읽기 전용)
+   GET /api/v1/seller/settlements 실데이터를 그대로 보여준다.
    ============================================================ */
 
 .settlement-mgmt__title {
@@ -19,9 +20,11 @@
   border-radius: var(--radius);
 }
 
+/* 정산완료/정산예정 구분 등 API가 주지 않는 값은 만들어내지 않아 카드가 2개뿐이라
+   auto-fit으로 둔다(카드 수가 늘어나도 자연스럽게 대응) */
 .settlement-mgmt__summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -44,14 +47,18 @@
 .settlement-mgmt__card-value {
   font-size: 20px;
   font-weight: 800;
+  color: var(--color-primary);
 }
 
-.settlement-mgmt__card-value--done {
-  color: var(--color-success);
+/* ---- 목록 조회 로딩/에러 상태 (다른 관리 화면과 동일한 패턴) ---- */
+.settlement-mgmt__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
 }
 
-.settlement-mgmt__card-value--pending {
-  color: var(--color-warning);
+.settlement-mgmt__status--error {
+  color: var(--color-danger);
 }
 
 .settlement-mgmt__guardrail {
@@ -91,16 +98,7 @@
   border-bottom: none;
 }
 
-.settlement-mgmt__fee {
-  color: var(--color-danger);
-  white-space: nowrap;
-}
-
-.settlement-mgmt__fee-rate {
-  color: var(--color-text-muted);
-  margin-left: 4px;
-}
-
+/* status 실제 enum이 확정되지 않아 색상 구분 없이 중립 톤 하나만 사용한다 */
 .settlement-mgmt__badge {
   display: inline-block;
   padding: 5px 10px;
@@ -109,14 +107,4 @@
   font-weight: 700;
   background: #eaedf2;
   color: var(--color-text-muted);
-}
-
-.settlement-mgmt__badge--done {
-  background: #e8f8f0;
-  color: var(--color-success);
-}
-
-.settlement-mgmt__badge--pending {
-  background: #fff3e6;
-  color: var(--color-warning);
 }

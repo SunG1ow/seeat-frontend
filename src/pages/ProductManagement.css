@@ -1,6 +1,8 @@
 /* ============================================================
    ProductManagement — 판매자 전용 수산물 상품 관리 화면
-   Login/Detail/MyPage/ProductRegistration과 동일한 패널·모달 토큰을 재사용한다.
+   GET /api/v1/seller/products로 내 상품 목록을 보여주고, 행을 선택하면
+   GET /api/v1/products/{id}로 상세를 불러와 모달에서 PUT /api/v1/products/{id}로 수정한다.
+   판매자/카테고리/판매상태/이미지 등 PUT이 받지 않는 필드는 모달 내 읽기 전용 영역으로만 노출한다.
    ============================================================ */
 
 .manage__title {
@@ -20,10 +22,12 @@
   border-radius: var(--radius-input);
 }
 
-/* ---- 상단 요약 대시보드 (오늘 매출 / 등록 상품 수 / 평균 낙찰가 / 정산 예정 금액) ---- */
+/* ---- 상단 요약 대시보드 ----
+   매출/정산 예정 금액은 판매 완료 수량이 필요한데 GET /api/v1/seller/products 응답에는
+   없어(가격·재고·상태만 내려옴) 표시하지 않는다. auto-fit이라 카드 수가 늘어나도 그대로 대응한다. */
 .manage__summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 14px;
   margin-bottom: 22px;
 }
@@ -97,70 +101,60 @@
   color: var(--color-primary);
 }
 
-.manage__badge--urgent {
-  background: #ffede9;
-  color: var(--color-danger);
+/* 심사중(승인 대기) 뱃지: 판매자가 바로 알아챌 수 있게 경고 톤으로 표시 */
+.manage__badge--pending {
+  background: #fdf2e2;
+  color: var(--color-warning);
 }
 
-/* 매진(품절/판매중지 포함) 뱃지: 눈에 띄는 붉은 계열 대신 차분한 회색 톤으로 표시 */
+/* 매진·판매중지·반려 뱃지: 눈에 띄는 붉은 계열 대신 차분한 회색 톤으로 표시 */
 .manage__badge--soldout {
   background: #f1f5f9;
   color: #64748b;
 }
 
-.manage__row-actions {
+/* ---- 목록 조회 로딩/에러 상태 (Orders/Search와 동일한 패턴) ---- */
+.manage__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.manage__status--error {
+  color: var(--color-danger);
+}
+
+/* ---- 페이지네이션 ---- */
+.manage__pagination {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
 }
 
-.manage__status-btn {
+.manage__page-btn {
   border: 1px solid var(--color-border);
   background: #fff;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   border-radius: var(--radius-input);
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
 }
 
-.manage__status-btn:hover {
+.manage__page-btn:hover:not(:disabled) {
   background: var(--color-background);
 }
 
-.manage__status-btn--active.manage__status-btn--onsale {
-  background: var(--color-secondary);
-  border-color: var(--color-secondary);
-  color: #fff;
+.manage__page-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
-.manage__status-btn--active.manage__status-btn--soldout {
-  background: var(--color-text-muted);
-  border-color: var(--color-text-muted);
-  color: #fff;
-}
-
-.manage__status-btn--active.manage__status-btn--suspended {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.manage__edit-btn {
-  border: none;
-  border-radius: var(--radius-input);
-  padding: 7px 12px;
-  font-weight: 700;
-  font-size: 12px;
-  background: var(--color-primary);
-  color: #fff;
-  white-space: nowrap;
-}
-
-.manage__edit-btn:hover {
-  background: var(--color-primary-hover);
+.manage__page-info {
+  color: var(--color-text-muted);
 }
 
 .manage__denied {
@@ -183,7 +177,22 @@
   color: #fff;
 }
 
-/* ---- 수정 모달 (Register/MyPage 모달과 동일한 토큰) ---- */
+.manage__edit-btn {
+  border: none;
+  border-radius: var(--radius-input);
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--color-primary);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.manage__edit-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ---- 상세/수정 모달 (Register/MyPage 모달과 동일한 토큰) ---- */
 .manage__modal-overlay {
   position: fixed;
   inset: 0;
@@ -192,10 +201,14 @@
   align-items: center;
   justify-content: center;
   z-index: 200;
+  padding: 24px;
 }
 
 .manage__modal {
-  width: 420px;
+  width: 460px;
+  max-width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
   background: #fff;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -208,6 +221,49 @@
 .manage__modal-title {
   font-size: 17px;
   font-weight: 800;
+}
+
+/* GET 상세 응답의 imageUrls를 보여주는 썸네일 줄 — 업로드/삭제는 이번 범위 밖 */
+.manage__modal-images {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.manage__modal-images img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* 수정 불가 정보(판매자/카테고리/상태/의무위판) — register__readonly와 동일한 회색 톤 */
+.manage__modal-readonly-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+  background: var(--color-background);
+  border-radius: var(--radius-input);
+}
+
+.manage__modal-readonly-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.manage__modal-readonly-item span:first-child {
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.manage__modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .manage__modal-field {
@@ -234,12 +290,6 @@
   outline: none;
   border-width: 2px;
   border-color: var(--color-secondary);
-}
-
-.manage__modal-field input:disabled {
-  background: var(--color-background);
-  color: var(--color-text-muted);
-  cursor: not-allowed;
 }
 
 .manage__modal-hint {

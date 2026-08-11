@@ -165,6 +165,55 @@ export async function createProduct(
 }
 
 // ============================================================
+// PUT /api/v1/products/{productId} — 판매자 상품 수정 (2026-08-10 스웨거 확인)
+// multipart가 아니라 application/json 바디이며, ProductUpdateRequest 스펙에 있는 필드만 받는다.
+// productId/sellerId/categoryId/categoryName/status/imageUrls/isMandatoryAuction은 이 API로
+// 수정할 수 없으니 절대 body에 넣지 않는다.
+// ============================================================
+
+export interface UpdateProductRequest {
+  name: string
+  origin: string
+  storageType: string
+  weight: number
+  weightUnit: string
+  price: number
+  stockQuantity: number
+  tags: string[]
+}
+
+export interface UpdateProductResult {
+  productId: number
+  name: string
+}
+
+interface UpdateProductApiResponse {
+  success: boolean
+  data: UpdateProductResult
+  message: string
+}
+
+// PUT /api/v1/products/{productId}
+export async function updateProduct(
+  productId: number,
+  request: UpdateProductRequest,
+): Promise<ApiResult<UpdateProductResult>> {
+  try {
+    const response = await api.put<UpdateProductApiResponse>(
+      `/api/v1/products/${productId}`,
+      request,
+    )
+    if (response.data?.success === true) {
+      return { ok: true, data: response.data.data }
+    }
+    return { ok: false, message: response.data?.message }
+  } catch (error) {
+    console.error('[products] 상품 수정 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
+
+// ============================================================
 // GET /api/v1/products/categories — 상품 등록 폼의 카테고리 선택 드롭다운용 (2026-08-10)
 // 다른 목록 API(products/search)와 달리 success/data 래퍼가 있는 형태로 명세됨에 유의.
 // ============================================================
@@ -193,6 +242,71 @@ export async function getCategories(signal?: AbortSignal): Promise<ApiResult<Api
     return { ok: false, message: response.data?.message }
   } catch (error) {
     console.error('[products] 카테고리 목록 조회 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
+
+// ============================================================
+// GET /api/v1/seller/products — 판매자 상품 관리(ProductManagement) 화면용 내 상품 목록 조회
+// (2026-08-10 스웨거 확인). 로그인한 판매자는 Authorization 헤더(JWT)로 서버가 식별하므로
+// 별도 sellerId 파라미터는 필요 없다.
+// ⚠️ 다른 목록 API(products/search, users/me/orders)와 같은 계열로, success/data 래퍼 없이
+// Spring Data Page 형태({content, totalPages, totalElements, size, number})가 최상단에 바로 온다.
+// ============================================================
+
+export interface SellerProductListItem {
+  productId: number
+  name: string
+  price: number
+  stockQuantity: number
+  status: string
+  createdAt: string
+}
+
+interface SellerProductPageResponse {
+  content: SellerProductListItem[]
+  totalPages: number
+  totalElements: number
+  size: number
+  number: number
+}
+
+export interface GetSellerProductsParams {
+  /** 0부터 시작하는 백엔드 페이지 번호 */
+  page?: number
+  size?: number
+}
+
+export interface SellerProductPage {
+  content: SellerProductListItem[]
+  totalPages: number
+  totalElements: number
+  size: number
+  number: number
+}
+
+// GET /api/v1/seller/products
+export async function getSellerProducts(
+  params: GetSellerProductsParams = {},
+  signal?: AbortSignal,
+): Promise<ApiResult<SellerProductPage>> {
+  try {
+    const response = await api.get<SellerProductPageResponse>('/api/v1/seller/products', {
+      params: { page: params.page ?? 0, size: params.size ?? 10 },
+      signal,
+    })
+    return {
+      ok: true,
+      data: {
+        content: response.data?.content ?? [],
+        totalPages: response.data?.totalPages ?? 0,
+        totalElements: response.data?.totalElements ?? 0,
+        size: response.data?.size ?? params.size ?? 10,
+        number: response.data?.number ?? params.page ?? 0,
+      },
+    }
+  } catch (error) {
+    console.error('[products] 판매자 상품 목록 조회 실패:', error)
     return { ok: false, message: extractErrorMessage(error) }
   }
 }
