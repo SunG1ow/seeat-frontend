@@ -170,3 +170,82 @@ export async function getMyOrders(
     return { ok: false, message: extractErrorMessage(error) }
   }
 }
+
+// ============================================================
+// GET /api/v1/users/me/delivery — 로그인 사용자 배송 조회 (스웨거 명세 기준, 2026-08-11 실 API 확인)
+// ⚠️ getMyOrders와 동일하게 success/data 래퍼 없이 { content, page }가 최상단에 바로 온다.
+// pageable은 스웨거 문서상 하나의 객체 파라미터로 보이지만, 이 백엔드의 다른 목록 API(products/search,
+// seller/products 등)와 동일하게 page/size/sort를 평탄한 쿼리 파라미터로 보낸다(Spring Pageable 바인딩 관례).
+// startDate/endDate는 둘 다 선택값(yyyy-MM-dd)이며 생략 가능하다.
+// ⚠️ status는 스웨거에 enum이 명시돼 있지 않다. 실 API로 확인했을 때 테스트 판매자 계정에는
+// 아직 배송 데이터가 없어(totalElements: 0) 실제 값 예시를 확인하지 못했으므로, 임의로 라벨을
+// 매핑하지 않고 백엔드가 내려주는 원본 문자열을 그대로 보여준다.
+// ============================================================
+
+export interface DeliveryTrackingItem {
+  orderId: number
+  productName: string
+  carrier: string
+  trackingNumber: string
+  status: string
+}
+
+interface DeliveryListResponse {
+  content: DeliveryTrackingItem[]
+  page: {
+    number: number
+    size: number
+    totalElements: number
+    totalPages: number
+  }
+}
+
+export interface GetMyDeliveriesParams {
+  page?: number
+  size?: number
+  sort?: string[]
+  /** yyyy-MM-dd */
+  startDate?: string
+  /** yyyy-MM-dd */
+  endDate?: string
+}
+
+export interface DeliveryPage {
+  content: DeliveryTrackingItem[]
+  totalPages: number
+  totalElements: number
+  size: number
+  number: number
+}
+
+// GET /api/v1/users/me/delivery
+export async function getMyDeliveries(
+  params: GetMyDeliveriesParams = {},
+  signal?: AbortSignal,
+): Promise<ApiResult<DeliveryPage>> {
+  try {
+    const response = await api.get<DeliveryListResponse>('/api/v1/users/me/delivery', {
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        ...(params.sort !== undefined ? { sort: params.sort } : {}),
+        ...(params.startDate !== undefined ? { startDate: params.startDate } : {}),
+        ...(params.endDate !== undefined ? { endDate: params.endDate } : {}),
+      },
+      signal,
+    })
+    return {
+      ok: true,
+      data: {
+        content: response.data?.content ?? [],
+        totalPages: response.data?.page?.totalPages ?? 0,
+        totalElements: response.data?.page?.totalElements ?? 0,
+        size: response.data?.page?.size ?? params.size ?? 20,
+        number: response.data?.page?.number ?? params.page ?? 0,
+      },
+    }
+  } catch (error) {
+    console.error('[orders] 배송 조회 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
