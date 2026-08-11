@@ -188,8 +188,13 @@
   white-space: nowrap;
 }
 
-.manage__edit-btn:hover {
+.manage__edit-btn:hover:not(:disabled) {
   background: var(--color-primary-hover);
+}
+
+.manage__edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ---- 상세/수정 모달 (Register/MyPage 모달과 동일한 토큰) ---- */
@@ -290,6 +295,53 @@
   outline: none;
   border-width: 2px;
   border-color: var(--color-secondary);
+}
+
+.manage__modal-field textarea {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  font-family: inherit;
+  background: #fbfcfe;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.manage__modal-field textarea:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.manage__modal-field select {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-input);
+  font-size: 13.5px;
+  background: #fbfcfe;
+}
+
+.manage__modal-field select:focus {
+  outline: none;
+  border-width: 2px;
+  border-color: var(--color-secondary);
+}
+
+.manage__modal-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 판매 상태 변경 셀렉트 + 버튼을 한 줄에 배치 — manage__modal-field의 세로 레이아웃 안에서
+   이 행만 가로로 둔다. */
+.manage__modal-status-row {
+  display: flex;
+  gap: 8px;
+}
+
+.manage__modal-status-row select {
+  flex: 1;
 }
 
 .manage__modal-hint {

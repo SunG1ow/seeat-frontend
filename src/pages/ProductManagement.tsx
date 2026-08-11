@@ -5,8 +5,10 @@ import {
   getSellerProducts,
   getProductDetail,
   updateProduct,
+  updateProductStatus,
   type SellerProductListItem,
   type ApiProductDetail,
+  type ProductStatus,
 } from '../api/products'
 import './ProductManagement.css'
 
@@ -21,6 +23,16 @@ const STATUS_LABEL_MAP: Record<string, string> = {
   ON_SALE: '판매중',
   SOLD_OUT: '품절',
   HIDDEN: '숨김',
+}
+
+// 판매 상태 변경 셀렉트의 선택지 — PATCH /api/v1/products/{productId}/status가 허용하는 값과
+// 정확히 동일한 4개뿐이다(스웨거 enum). STATUS_LABEL_MAP과 같은 순서로 맞춰 라벨을 재사용한다.
+const STATUS_OPTIONS: ProductStatus[] = ['PENDING_REVIEW', 'ON_SALE', 'SOLD_OUT', 'HIDDEN']
+
+// GET 상세 응답의 status는 방어적으로 string 타입이라(알 수 없는 값이 와도 화면이 깨지지 않게),
+// 셀렉트에 넣기 전 4개 허용값 중 하나인지 확인한다.
+function isProductStatus(value: string): value is ProductStatus {
+  return (STATUS_OPTIONS as string[]).includes(value)
 }
 
 function statusLabel(status: string) {
@@ -47,6 +59,22 @@ function fmtDate(iso: string) {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return iso
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+// 백엔드 auctionDeadline은 타임존 오프셋이 없는 date-time 문자열로 내려온다(예: "2026-07-23T11:00:00",
+// GET 상세 응답의 createdAt과 동일한 포맷). Date 객체/toISOString()을 거치면 로컬 타임존이 UTC로
+// 변환되며 사용자가 고른 시각이 밀려버리므로, <input type="datetime-local"> 값("YYYY-MM-DDTHH:mm")과는
+// 문자열을 그대로 자르고 붙이는 방식으로만 변환한다.
+function isoToDatetimeLocalInput(iso: string | null): string {
+  if (!iso) return ''
+  return iso.length >= 16 ? iso.slice(0, 16) : iso
+}
+
+function datetimeLocalInputToIso(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  // datetime-local 값은 보통 초 없이 "YYYY-MM-DDTHH:mm" 형태로 내려온다 — 백엔드 포맷에 맞춰 초를 붙인다.
+  return trimmed.length === 16 ? `${trimmed}:00` : trimmed
 }
 
 function ProductManagement() {
@@ -78,9 +106,17 @@ function ProductManagement() {
   const [draftPrice, setDraftPrice] = useState('')
   const [draftStock, setDraftStock] = useState('')
   const [draftTags, setDraftTags] = useState('')
+  // datetime-local input 값("YYYY-MM-DDTHH:mm") 그대로 보관 — ISO 변환은 저장 시점에만 한다.
+  const [draftAuctionDeadline, setDraftAuctionDeadline] = useState('')
+  const [draftDescription, setDraftDescription] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+
+  // 판매 상태 변경 — PUT(수정 폼)과는 별개의 PATCH 호출이라 draft/에러/로딩 상태를 따로 둔다.
+  const [draftStatus, setDraftStatus] = useState<ProductStatus | ''>('')
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   // GET /api/v1/seller/products — 화면 진입/페이지 변경/수정 저장 후 재조회. 로그인한 판매자는
   // Authorization 헤더(JWT)로 서버가 식별하므로 별도 파라미터 없이 page/size만 넘긴다.
@@ -139,6 +175,9 @@ function ProductManagement() {
         setDraftPrice(String(data.price))
         setDraftStock(String(data.stockQuantity))
         setDraftTags(data.tags.join(', '))
+        setDraftAuctionDeadline(isoToDatetimeLocalInput(data.auctionDeadline))
+        setDraftDescription(data.description ?? '')
+        setDraftStatus(isProductStatus(data.status) ? data.status : '')
       } catch (error) {
         if (controller.signal.aborted) return
         console.error('[manage] 상품 상세 조회 실패:', error)
@@ -167,6 +206,7 @@ function ProductManagement() {
     setDetail(null)
     setDetailError(null)
     setFormError(null)
+    setStatusError(null)
   }
 
   function closeDetail() {
@@ -174,6 +214,37 @@ function ProductManagement() {
     setDetail(null)
     setDetailError(null)
     setFormError(null)
+    setStatusError(null)
+  }
+
+  // PATCH /api/v1/products/{productId}/status 호출 → success: true일 때만 상태를 반영한다.
+  // 수정 폼(handleSave, PUT)과는 별개의 API라 실패해도 상품명 등 나머지 필드에는 영향이 없다.
+  // 성공 시 상세 모달(detail)과 목록(items) 양쪽의 상태를 그 자리에서 갱신해 재조회 없이 바로
+  // 화면에 반영한다.
+  async function handleStatusChange() {
+    if (!detail) return
+    if (isStatusUpdating) return
+    if (!draftStatus || draftStatus === detail.status) return
+
+    setIsStatusUpdating(true)
+    setStatusError(null)
+    try {
+      const result = await updateProductStatus(detail.productId, { status: draftStatus })
+      if (result.ok && result.data) {
+        const nextStatus = result.data.status
+        setDetail((prev) => (prev ? { ...prev, status: nextStatus } : prev))
+        setItems((prev) =>
+          prev.map((item) =>
+            item.productId === detail.productId ? { ...item, status: nextStatus } : item,
+          ),
+        )
+        flashToast('판매 상태가 변경되었습니다')
+      } else {
+        setStatusError(result.message || '판매 상태 변경에 실패했습니다')
+      }
+    } finally {
+      setIsStatusUpdating(false)
+    }
   }
 
   // PUT /api/v1/products/{productId} 호출 → success: true일 때만 "수정 완료" 처리.
@@ -217,6 +288,8 @@ function ProductManagement() {
         price: priceNum,
         stockQuantity: stockNum,
         tags,
+        auctionDeadline: datetimeLocalInputToIso(draftAuctionDeadline),
+        description: draftDescription.trim() || null,
       })
 
       if (result.ok) {
@@ -369,12 +442,13 @@ function ProductManagement() {
                   </div>
                 )}
 
-                {/* 판매자·카테고리·상태·의무위판 여부·이미지는 PUT /api/v1/products/{id}가
-                    받지 않는 필드라 이 화면에서 수정할 수 없다 — 읽기 전용으로만 보여준다. */}
+                {/* 판매자·카테고리·의무위판 여부·이미지는 PUT /api/v1/products/{id}가 받지 않는
+                    필드라 이 화면에서 수정할 수 없다 — 읽기 전용으로만 보여준다. 판매 상태 배지도
+                    그대로 유지하되, 바로 아래에 PATCH .../status로 변경하는 별도 컨트롤을 둔다. */}
                 <div className="manage__modal-readonly-grid">
                   <div className="manage__modal-readonly-item">
                     <span className="fs-caption">판매자</span>
-                    <span>{detail.sellerNickname}</span>
+                    <span>{detail.sellerName}</span>
                   </div>
                   <div className="manage__modal-readonly-item">
                     <span className="fs-caption">카테고리</span>
@@ -392,8 +466,36 @@ function ProductManagement() {
                   </div>
                 </div>
 
+                {/* PUT(상품 수정)과는 별개의 PATCH /api/v1/products/{id}/status 호출 — 위 배지는
+                    건드리지 않고, 별도 셀렉트+버튼으로만 상태를 바꾼다. */}
+                <div className="manage__modal-field">
+                  <label>판매 상태 변경</label>
+                  <div className="manage__modal-status-row">
+                    <select
+                      value={draftStatus}
+                      onChange={(event) => setDraftStatus(event.target.value as ProductStatus)}
+                      disabled={isStatusUpdating}
+                    >
+                      {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>
+                          {statusLabel(status)}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="manage__edit-btn"
+                      onClick={handleStatusChange}
+                      disabled={isStatusUpdating || !draftStatus || draftStatus === detail.status}
+                    >
+                      {isStatusUpdating ? '변경 중...' : '상태 변경'}
+                    </button>
+                  </div>
+                  {statusError && <p className="manage__modal-error fs-body2">{statusError}</p>}
+                </div>
+
                 <p className="manage__modal-hint fs-caption">
-                  판매자·카테고리·판매 상태·의무위판 여부·이미지는 이 화면에서 수정할 수 없습니다.
+                  판매자·카테고리·의무위판 여부·이미지는 이 화면에서 수정할 수 없습니다.
                 </p>
 
                 <div className="manage__modal-field">
@@ -472,6 +574,25 @@ function ProductManagement() {
                     value={draftTags}
                     onChange={(event) => setDraftTags(event.target.value)}
                     placeholder="예: 냉장직송, 당일조업"
+                  />
+                </div>
+
+                <div className="manage__modal-field">
+                  <label>위판 마감시간</label>
+                  <input
+                    type="datetime-local"
+                    value={draftAuctionDeadline}
+                    onChange={(event) => setDraftAuctionDeadline(event.target.value)}
+                  />
+                </div>
+
+                <div className="manage__modal-field">
+                  <label>상품 상세 설명</label>
+                  <textarea
+                    rows={4}
+                    value={draftDescription}
+                    onChange={(event) => setDraftDescription(event.target.value)}
+                    placeholder="상품에 대한 상세 설명을 입력하세요"
                   />
                 </div>
 
