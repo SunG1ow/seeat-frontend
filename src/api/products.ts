@@ -43,13 +43,19 @@ export async function searchProducts(
   return response.data.content
 }
 
-// GET /api/v1/products/{productId} 응답(data) 스펙 (2026-08-10 스웨거 확정, 401 버그 수정됨).
-// 목록 조회(ApiProduct)와 필드 구성이 달라(썸네일 1장 대신 imageUrls 배열, 재고 total 없음 등)
+// GET /api/v1/products/{productId} 응답(data) 원본 스펙 (2026-08-11 실제 API 재검증 기준).
+// 목록 조회(ApiProduct)와 필드 구성이 달라(이미지는 그룹 배열, 재고 total 없음 등)
 // 더 이상 ApiProduct를 상속하지 않고 독립된 타입으로 둔다.
-export interface ApiProductDetail {
+// ⚠️ 예전엔 imageUrls(string[])·sellerNickname으로 알려져 있었으나, 실제 백엔드 응답은
+// images([{ imageUrls: string[] }])·sellerName이다 — 아래 RawProductDetail이 실제 응답 그대로다.
+interface ProductDetailImageGroup {
+  imageUrls: string[]
+}
+
+interface RawProductDetail {
   productId: number
   sellerId: number
-  sellerNickname: string
+  sellerName: string
   categoryId: number
   categoryName: string
   name: string
@@ -60,19 +66,48 @@ export interface ApiProductDetail {
   isMandatoryAuction: boolean
   price: number
   stockQuantity: number
+  auctionDeadline: string | null
+  description: string | null
+  status: string
+  images: ProductDetailImageGroup[]
+  tags: string[]
+  createdAt: string
+}
+
+// 화면(Detail.tsx, ProductManagement.tsx)에서 쓰는 상세 타입. 기존 UI가 imageUrls를 평탄화된
+// string[]로 다뤘던 구조를 그대로 유지하기 위해, images 그룹 배열은 getProductDetail()에서
+// imageUrls로 펼쳐서 내려준다. sellerNickname은 실제 응답에 없는 필드라 sellerName으로 교체했다.
+export interface ApiProductDetail {
+  productId: number
+  sellerId: number
+  sellerName: string
+  categoryId: number
+  categoryName: string
+  name: string
+  origin: string
+  storageType: string
+  weight: number
+  weightUnit: string
+  isMandatoryAuction: boolean
+  price: number
+  stockQuantity: number
+  auctionDeadline: string | null
+  description: string | null
   status: string
   tags: string[]
   imageUrls: string[]
+  createdAt: string
 }
 
 interface ProductDetailApiResponse {
   success: boolean
-  data: ApiProductDetail
+  data: RawProductDetail
   message: string
 }
 
 // GET /api/v1/products/{productId}
-// ⚠️ 예전에 있던 401 버그(TEMP MOCK 우회) 백엔드에서 수정 완료 — 실제 API를 그대로 호출한다.
+// ⚠️ 예전에 있던 401/500 버그 백엔드에서 수정 완료 — 실제 API를 그대로 호출한다.
+// 응답의 images([{ imageUrls: [...] }, ...])는 화면에서 쓰기 편하도록 imageUrls(string[])로 펼쳐서 반환한다.
 export async function getProductDetail(
   productId: number,
   signal?: AbortSignal,
@@ -84,7 +119,28 @@ export async function getProductDetail(
   if (response.data?.success !== true || !response.data.data) {
     throw new Error(response.data?.message || '상품 정보를 불러오지 못했습니다.')
   }
-  return response.data.data
+  const raw = response.data.data
+  return {
+    productId: raw.productId,
+    sellerId: raw.sellerId,
+    sellerName: raw.sellerName,
+    categoryId: raw.categoryId,
+    categoryName: raw.categoryName,
+    name: raw.name,
+    origin: raw.origin,
+    storageType: raw.storageType,
+    weight: raw.weight,
+    weightUnit: raw.weightUnit,
+    isMandatoryAuction: raw.isMandatoryAuction,
+    price: raw.price,
+    stockQuantity: raw.stockQuantity,
+    auctionDeadline: raw.auctionDeadline,
+    description: raw.description,
+    status: raw.status,
+    tags: raw.tags,
+    createdAt: raw.createdAt,
+    imageUrls: raw.images?.flatMap((group) => group.imageUrls) ?? [],
+  }
 }
 
 // ============================================================
@@ -165,10 +221,12 @@ export async function createProduct(
 }
 
 // ============================================================
-// PUT /api/v1/products/{productId} — 판매자 상품 수정 (2026-08-10 스웨거 확인)
+// PUT /api/v1/products/{productId} — 판매자 상품 수정 (2026-08-11 라이브 스웨거 재확인)
 // multipart가 아니라 application/json 바디이며, ProductUpdateRequest 스펙에 있는 필드만 받는다.
 // productId/sellerId/categoryId/categoryName/status/imageUrls/isMandatoryAuction은 이 API로
 // 수정할 수 없으니 절대 body에 넣지 않는다.
+// auctionDeadline(date-time 문자열)·description은 둘 다 스펙상 선택 필드이며, GET 상세 응답과
+// 동일하게 값이 없을 때는 null로 표현한다(필드 자체를 생략하지 않고 명시적으로 null을 보낸다).
 // ============================================================
 
 export interface UpdateProductRequest {
@@ -180,6 +238,8 @@ export interface UpdateProductRequest {
   price: number
   stockQuantity: number
   tags: string[]
+  auctionDeadline: string | null
+  description: string | null
 }
 
 export interface UpdateProductResult {
@@ -209,6 +269,49 @@ export async function updateProduct(
     return { ok: false, message: response.data?.message }
   } catch (error) {
     console.error('[products] 상품 수정 실패:', error)
+    return { ok: false, message: extractErrorMessage(error) }
+  }
+}
+
+// ============================================================
+// PATCH /api/v1/products/{productId}/status — 판매자 상품 판매 상태 변경 (2026-08-11 라이브 스웨거 확인)
+// application/json 바디에 status 하나만 담는다. 허용 값은 4가지뿐이며(스웨거 enum), 그 외 값은
+// 절대 임의로 만들어 보내지 않는다.
+// ============================================================
+
+export type ProductStatus = 'PENDING_REVIEW' | 'ON_SALE' | 'SOLD_OUT' | 'HIDDEN'
+
+export interface UpdateStatusRequest {
+  status: ProductStatus
+}
+
+export interface UpdateStatusResult {
+  productId: number
+  status: ProductStatus
+}
+
+interface UpdateStatusApiResponse {
+  success: boolean
+  data: UpdateStatusResult
+  message: string
+}
+
+// PATCH /api/v1/products/{productId}/status
+export async function updateProductStatus(
+  productId: number,
+  request: UpdateStatusRequest,
+): Promise<ApiResult<UpdateStatusResult>> {
+  try {
+    const response = await api.patch<UpdateStatusApiResponse>(
+      `/api/v1/products/${productId}/status`,
+      request,
+    )
+    if (response.data?.success === true) {
+      return { ok: true, data: response.data.data }
+    }
+    return { ok: false, message: response.data?.message }
+  } catch (error) {
+    console.error('[products] 판매 상태 변경 실패:', error)
     return { ok: false, message: extractErrorMessage(error) }
   }
 }

@@ -237,7 +237,7 @@ function Detail() {
             )}
           </div>
           <h1 className="detail__title">{product.name}</h1>
-          <div className="detail__seller fs-body2">{product.sellerNickname}</div>
+          <div className="detail__seller fs-body2">{product.sellerName}</div>
 
           <div className="detail__stat-row">
             <div className="detail__stat-item">
@@ -308,7 +308,7 @@ function Detail() {
           </div>
 
           <div className="detail__seller-box fs-caption">
-            판매자: {product.sellerNickname} · 원산지 직송 · 위판 낙찰 즉시 발송됩니다. 교환/환불은
+            판매자: {product.sellerName} · 원산지 직송 · 위판 낙찰 즉시 발송됩니다. 교환/환불은
             수산물 특성상 신선도 이상 시에만 가능하며, 결제 후 7일 이내 청약철회가 가능합니다.
           </div>
         </div>
