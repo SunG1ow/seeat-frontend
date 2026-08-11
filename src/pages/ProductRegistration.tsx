@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { createProduct, getCategories, type ApiCategory } from '../api/products'
+import { createProduct, updateProductStatus, getCategories, type ApiCategory } from '../api/products'
 import { isClosedSeasonNow, SELECTABLE_SPECIES } from '../data/species'
 import { APPROVED_VESSEL_LICENSE } from '../data/sellerLicense'
 import './ProductRegistration.css'
@@ -173,6 +173,11 @@ function ProductRegistration() {
   // "등록 완료" 처리. success: false거나 통신 자체가 실패(catch)해도 무조건 성공으로 보이는 일이
   // 없도록 createProduct()의 반환값(ok)을 반드시 확인한다. 400 등 실패 시에도 화면이 멈추지 않고
   // 에러 토스트로 안내한 뒤 모달은 열어둬 재시도할 수 있게 한다.
+  //
+  // ⚠️ PM 결정(관리자 승인 없이 즉시 게시): 새 상품은 백엔드 정책상 PENDING_REVIEW로 생성되므로,
+  // 등록(POST) 성공 직후 PATCH /api/v1/products/{productId}/status로 ON_SALE 전환을 자동 호출한다.
+  // POST가 실패하면 PATCH는 절대 호출하지 않는다. PATCH가 실패해도 상품 자체는 이미 등록된
+  // 상태이므로(PENDING_REVIEW로 남음) 등록 실패로 되돌리지 않고, 토스트로 정확한 상태를 안내한다.
   async function handlePledgeConfirm() {
     if (!pledgeChecked || !selectedSpecies || !storage || !categoryId) return
     if (isSubmitting) return
@@ -199,10 +204,22 @@ function ProductRegistration() {
         images.map((img) => img.file),
       )
 
-      if (result.ok) {
+      if (result.ok && result.data) {
         setPledgeModalOpen(false)
-        flashToast('상품이 성공적으로 등록되었습니다')
         resetForm()
+
+        const statusResult = await updateProductStatus(result.data.productId, {
+          status: 'ON_SALE',
+        })
+        if (statusResult.ok) {
+          flashToast('상품이 등록되어 바로 판매중 상태로 게시되었습니다')
+        } else {
+          console.error('[register] 등록 직후 판매중 전환 실패:', statusResult.message)
+          flashToast(
+            statusResult.message ||
+              '상품은 등록되었지만 판매중 전환에 실패해 심사중 상태로 남아있습니다. 상품관리에서 확인해주세요.',
+          )
+        }
         navigate('/manage')
       } else {
         console.error('[register] 상품 등록 실패:', result.message)
