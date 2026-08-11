@@ -4,7 +4,7 @@ import logo from '../assets/logo-white.png'
 import './Header.css'
 
 // §4.2.2 GNB: 구매자 모드 vs 판매자 모드는 계정 유형에 따라 결정되며,
-// 판매자 모드에서는 GNB에 상품등록/상품관리 메뉴가 추가로 노출된다.
+// 판매자 모드에서는 GNB에 상품등록/상품관리/배송관리 메뉴가 추가로 노출된다.
 // 모드는 더 이상 GNB에서 수동으로 전환하지 않고, /login 화면에서 로그인한
 // 역할(AuthContext)을 그대로 구독한다.
 interface NavItem {
@@ -23,6 +23,7 @@ const DASHBOARD_NAV: NavItem = { id: 'dashboard', label: '대시보드', path: '
 const SELLER_ONLY_NAV: NavItem[] = [
   { id: 'register', label: '상품등록', path: '/register' },
   { id: 'manage', label: '상품관리', path: '/manage' },
+  { id: 'shipping', label: '배송관리', path: '/seller/shipping' },
 ]
 
 const ADMIN_NAV: NavItem[] = [HOME_NAV, DASHBOARD_NAV]
@@ -34,7 +35,7 @@ function Header() {
 
   const isAdmin = role === 'admin'
 
-  // 구매자: 홈·상품검색·주문내역·공지사항·장바구니 / 판매자: 여기에 상품등록·상품관리가 추가된다
+  // 구매자: 홈·상품검색·주문내역·공지사항·장바구니 / 판매자: 여기에 상품등록·상품관리·배송관리가 추가된다
   // 관리자 모드에서는 일반 GNB 메뉴 대신 홈·대시보드 두 가지만 좌측에 노출한다
   const navItems = isAdmin
     ? ADMIN_NAV
