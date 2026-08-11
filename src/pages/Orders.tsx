@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getMyOrders, cancelOrder, type OrderListItem } from '../api/orders'
+import {
+  getMyOrders,
+  cancelOrder,
+  getOrderStatusHistory,
+  type OrderListItem,
+  type OrderStatusHistoryItem,
+} from '../api/orders'
 import './Orders.css'
 
 // 구매자용 배송 현황 인디케이터. 판매자 처리 상태(결제완료→상품준비중→배송중→배송완료)에
@@ -57,6 +63,20 @@ function fmtDate(iso: string) {
   return date.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
+// 상태 이력은 날짜만으로는 변경 순서를 구분하기 어려워(같은 날 몇 초 간격으로도 바뀜) 시각까지 표시한다.
+function fmtDateTime(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
 // SEEAT-_3.HTM renderOrders()/.order-track 구조 참고
 function Orders() {
   const [orders, setOrders] = useState<OrderListItem[]>([])
@@ -69,6 +89,13 @@ function Orders() {
   const [isCancelling, setIsCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  // GET /api/v1/orders/{orderId}/status-history — "상태 이력 보기" 클릭 시에만 해당 주문 하나만
+  // 조회한다(lazy fetch). historyByOrder에 결과가 이미 있으면 다시 접었다 펼쳐도 재호출하지 않는다.
+  const [expandedOrderIds, setExpandedOrderIds] = useState<Set<number>>(new Set())
+  const [historyByOrder, setHistoryByOrder] = useState<Record<number, OrderStatusHistoryItem[]>>({})
+  const [historyLoading, setHistoryLoading] = useState<Record<number, boolean>>({})
+  const [historyError, setHistoryError] = useState<Record<number, string | null>>({})
 
   // 주문내역 화면 진입 시 1회 조회. GET /api/v1/users/me/orders는 page/size 파라미터를 받고,
   // 로그인한 사용자는 Authorization 헤더(JWT)로 서버가 식별한다.
@@ -145,6 +172,40 @@ function Orders() {
     }
   }
 
+  // "상태 이력 보기/접기" 토글. 펼칠 때 이미 조회된 적 있는 주문(historyByOrder에 존재)이면
+  // 재호출하지 않고 캐시를 그대로 쓴다. 접을 때는 API를 호출하지 않는다.
+  async function toggleHistory(orderId: number) {
+    setExpandedOrderIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(orderId)) {
+        next.delete(orderId)
+      } else {
+        next.add(orderId)
+      }
+      return next
+    })
+
+    if (historyByOrder[orderId] !== undefined) return
+    if (historyLoading[orderId]) return
+
+    setHistoryLoading((prev) => ({ ...prev, [orderId]: true }))
+    setHistoryError((prev) => ({ ...prev, [orderId]: null }))
+    const result = await getOrderStatusHistory(orderId)
+    if (result.ok && result.data) {
+      // changedAt 오름차순(시간순)으로 표시 — API가 이미 이 순서로 내려주지만 방어적으로 한 번 더 정렬한다.
+      const sorted = [...result.data].sort(
+        (a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime(),
+      )
+      setHistoryByOrder((prev) => ({ ...prev, [orderId]: sorted }))
+    } else {
+      setHistoryError((prev) => ({
+        ...prev,
+        [orderId]: result.message || '상태 이력을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      }))
+    }
+    setHistoryLoading((prev) => ({ ...prev, [orderId]: false }))
+  }
+
   return (
     <div className="orders">
       <h1 className="orders__title fs-title1">주문내역</h1>
@@ -194,6 +255,50 @@ function Orders() {
                     )
                   })}
                 </div>
+
+                <button
+                  type="button"
+                  className="orders__history-toggle"
+                  onClick={() => toggleHistory(order.orderId)}
+                >
+                  {expandedOrderIds.has(order.orderId) ? '상태 이력 접기' : '상태 이력 보기'}
+                </button>
+
+                {expandedOrderIds.has(order.orderId) && (
+                  <div className="orders__history">
+                    {historyLoading[order.orderId] && (
+                      <p className="orders__history-status fs-caption">
+                        상태 이력을 불러오는 중입니다...
+                      </p>
+                    )}
+
+                    {!historyLoading[order.orderId] && historyError[order.orderId] && (
+                      <p className="orders__history-status orders__history-status--error fs-caption">
+                        {historyError[order.orderId]}
+                      </p>
+                    )}
+
+                    {!historyLoading[order.orderId] &&
+                      !historyError[order.orderId] &&
+                      historyByOrder[order.orderId]?.length === 0 && (
+                        <p className="orders__history-status fs-caption">상태 이력이 없습니다</p>
+                      )}
+
+                    {!historyLoading[order.orderId] &&
+                      !historyError[order.orderId] &&
+                      historyByOrder[order.orderId] &&
+                      historyByOrder[order.orderId]!.length > 0 && (
+                        <ul className="orders__history-list">
+                          {historyByOrder[order.orderId]!.map((entry) => (
+                            <li key={entry.historyId} className="orders__history-entry fs-caption">
+                              <span className="mono">{fmtDateTime(entry.changedAt)}</span>
+                              <span>{entry.statusValue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                  </div>
+                )}
               </div>
             )
           })}
