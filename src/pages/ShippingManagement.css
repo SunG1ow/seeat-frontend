@@ -57,6 +57,49 @@
   margin-bottom: 10px;
 }
 
+/* ---- 배송 조회 탭: 로딩/에러 상태 (ProductManagement의 manage__status와 동일한 패턴) ---- */
+.shipping-mgmt__status {
+  color: var(--color-text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.shipping-mgmt__status--error {
+  color: var(--color-danger);
+}
+
+.shipping-mgmt__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.shipping-mgmt__page-btn {
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  border-radius: var(--radius-input);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.shipping-mgmt__page-btn:hover:not(:disabled) {
+  background: var(--color-background);
+}
+
+.shipping-mgmt__page-btn:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.shipping-mgmt__page-info {
+  color: var(--color-text-muted);
+}
+
 .shipping-mgmt__table {
   width: 100%;
   border-collapse: collapse;

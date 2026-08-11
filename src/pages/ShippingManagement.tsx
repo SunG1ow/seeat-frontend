@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
   COURIERS,
@@ -8,6 +8,7 @@ import {
   type ClaimType,
   type Order,
 } from '../context/OrdersContext'
+import { getMyDeliveries, type DeliveryTrackingItem } from '../api/orders'
 import './ShippingManagement.css'
 
 function won(n: number) {
@@ -15,6 +16,7 @@ function won(n: number) {
 }
 
 const PREPARING_STAGE = 1
+const DELIVERY_PAGE_SIZE = 10
 
 const CLAIM_TYPE_LABEL: Record<ClaimType, string> = {
   cancel: '취소',
@@ -28,7 +30,7 @@ const CLAIM_STATUS_LABEL: Record<ClaimStatus, string> = {
   rejected: '거절됨',
 }
 
-type Tab = 'shipping' | 'claims'
+type Tab = 'shipping' | 'delivery' | 'claims'
 
 interface TrackingDraft {
   company: string
@@ -48,12 +50,51 @@ function ShippingManagement() {
   const [drafts, setDrafts] = useState<Record<number, TrackingDraft>>({})
   const [rejectDrafts, setRejectDrafts] = useState<Record<number, string>>({})
 
+  // GET /api/v1/users/me/delivery — '배송 조회' 탭을 열 때(및 페이지 이동 시)만 조회한다.
+  const [deliveries, setDeliveries] = useState<DeliveryTrackingItem[]>([])
+  const [deliveryPage, setDeliveryPage] = useState(0)
+  const [deliveryTotalPages, setDeliveryTotalPages] = useState(0)
+  const [isDeliveryLoading, setIsDeliveryLoading] = useState(false)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (role !== 'seller') return
+    if (tab !== 'delivery') return
+
+    const controller = new AbortController()
+
+    async function fetchDeliveries() {
+      setIsDeliveryLoading(true)
+      setDeliveryError(null)
+      const result = await getMyDeliveries(
+        { page: deliveryPage, size: DELIVERY_PAGE_SIZE },
+        controller.signal,
+      )
+      if (controller.signal.aborted) return
+      if (result.ok && result.data) {
+        setDeliveries(result.data.content)
+        setDeliveryTotalPages(result.data.totalPages)
+      } else {
+        setDeliveryError(result.message || '배송 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+      }
+      setIsDeliveryLoading(false)
+    }
+
+    fetchDeliveries()
+    return () => controller.abort()
+  }, [role, tab, deliveryPage])
+
   if (role !== 'seller') {
     return (
       <div className="shipping-mgmt">
         <div className="shipping-mgmt__empty fs-body1">판매자 전용 페이지입니다</div>
       </div>
     )
+  }
+
+  function goToDeliveryPage(next: number) {
+    if (next < 0 || next >= deliveryTotalPages || next === deliveryPage) return
+    setDeliveryPage(next)
   }
 
   const preparingOrders = orders.filter((order) => order.stage === PREPARING_STAGE)
@@ -115,6 +156,13 @@ function ShippingManagement() {
         </button>
         <button
           type="button"
+          className={`shipping-mgmt__tab${tab === 'delivery' ? ' shipping-mgmt__tab--active' : ''}`}
+          onClick={() => setTab('delivery')}
+        >
+          배송 조회
+        </button>
+        <button
+          type="button"
           className={`shipping-mgmt__tab${tab === 'claims' ? ' shipping-mgmt__tab--active' : ''}`}
           onClick={() => setTab('claims')}
         >
@@ -125,8 +173,8 @@ function ShippingManagement() {
         </button>
       </div>
 
-      {tab === 'shipping' ? (
-        preparingOrders.length === 0 ? (
+      {tab === 'shipping' &&
+        (preparingOrders.length === 0 ? (
           <div className="shipping-mgmt__empty fs-body1">송장 등록이 필요한 주문이 없습니다</div>
         ) : (
           <>
@@ -192,8 +240,79 @@ function ShippingManagement() {
               </tbody>
             </table>
           </>
-        )
-      ) : claimOrders.length === 0 ? (
+        ))}
+
+      {tab === 'delivery' && (
+        <>
+          {isDeliveryLoading && (
+            <div className="shipping-mgmt__status fs-body2">배송 정보를 불러오는 중입니다...</div>
+          )}
+
+          {!isDeliveryLoading && deliveryError && (
+            <div className="shipping-mgmt__status shipping-mgmt__status--error fs-body2">
+              {deliveryError}
+            </div>
+          )}
+
+          {!isDeliveryLoading && !deliveryError && deliveries.length === 0 && (
+            <div className="shipping-mgmt__empty fs-body1">조회된 배송 내역이 없습니다</div>
+          )}
+
+          {!isDeliveryLoading && !deliveryError && deliveries.length > 0 && (
+            <>
+              <table className="shipping-mgmt__table">
+                <thead>
+                  <tr>
+                    <th>주문번호</th>
+                    <th>상품</th>
+                    <th>택배사</th>
+                    <th>운송장 번호</th>
+                    <th>배송 상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveries.map((delivery) => (
+                    <tr key={delivery.orderId}>
+                      <td className="mono">#{delivery.orderId}</td>
+                      <td>{delivery.productName}</td>
+                      <td>{delivery.carrier || '-'}</td>
+                      <td className="mono">{delivery.trackingNumber || '-'}</td>
+                      <td>{delivery.status || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {deliveryTotalPages > 1 && (
+                <div className="shipping-mgmt__pagination">
+                  <button
+                    type="button"
+                    className="shipping-mgmt__page-btn"
+                    onClick={() => goToDeliveryPage(deliveryPage - 1)}
+                    disabled={deliveryPage <= 0}
+                  >
+                    이전
+                  </button>
+                  <span className="shipping-mgmt__page-info fs-caption mono">
+                    {deliveryPage + 1} / {deliveryTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="shipping-mgmt__page-btn"
+                    onClick={() => goToDeliveryPage(deliveryPage + 1)}
+                    disabled={deliveryPage >= deliveryTotalPages - 1}
+                  >
+                    다음
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {tab === 'claims' &&
+        (claimOrders.length === 0 ? (
         <div className="shipping-mgmt__empty fs-body1">접수된 취소/환불 요청이 없습니다</div>
       ) : (
         <div className="shipping-mgmt__claims">
@@ -283,7 +402,7 @@ function ShippingManagement() {
             )
           })}
         </div>
-      )}
+        ))}
     </div>
   )
 }
