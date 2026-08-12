@@ -1,4 +1,5 @@
 import type { ApiProduct } from '../api/products'
+import { useCountdown } from '../hooks/useCountdown'
 import './ProductResultCard.css'
 
 interface ProductResultCardProps {
@@ -22,6 +23,10 @@ function ProductResultCard({
   onViewDetail,
   isAddingToCart = false,
 }: ProductResultCardProps) {
+  // /search 응답의 auctionDeadline·stockQuantity를 그대로 쓴다 — 카드마다 상세 API를
+  // 따로 호출하지 않는다(N+1 방지). 남은 시간만 이 훅이 1초마다 재계산해서 보여준다.
+  const countdown = useCountdown(product.auctionDeadline)
+
   return (
     <div
       className="product-result-card"
@@ -61,6 +66,25 @@ function ProductResultCard({
         {product.weightUnit}
       </div>
       <div className="product-result-card__price fs-body1 mono">{won(product.price)}</div>
+
+      <div className="product-result-card__meta">
+        <span
+          className={
+            'product-result-card__countdown mono' +
+            (countdown.isExpired
+              ? ' product-result-card__countdown--expired'
+              : countdown.isUrgent
+                ? ' product-result-card__countdown--urgent'
+                : '')
+          }
+        >
+          {countdown.isExpired ? '마감' : `⏱ ${countdown.label}`}
+        </span>
+        <span className="product-result-card__stock fs-caption mono">
+          {product.stockQuantity}
+          {product.weightUnit} 남음
+        </span>
+      </div>
 
       <div className="product-result-card__actions">
         <button
