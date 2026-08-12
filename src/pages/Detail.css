@@ -95,9 +95,27 @@
 
 /* §4.3.1 / §4.1.2: 상세 화면 큰 타이머 — Monospace + Accent(#FF5C35) */
 .detail__big-timer {
+  font-family: var(--font-mono);
   font-size: 26px;
   font-weight: 700;
   color: var(--color-accent);
+}
+
+/* 마감 1시간 이내 — 더 강한 경고색으로 깜빡여 위판 마감임박을 알린다 */
+.detail__big-timer--urgent {
+  color: var(--color-danger);
+  animation: detail-big-timer-blink 1s ease-in-out infinite;
+}
+
+.detail__big-timer--expired {
+  color: var(--color-text-muted);
+  animation: none;
+}
+
+@keyframes detail-big-timer-blink {
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .detail__gauge {

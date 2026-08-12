@@ -65,6 +65,41 @@
   font-weight: 700;
 }
 
+/* 남은 위판 시간(auctionDeadline 카운트다운) · 잔여수량(stockQuantity) — /search 응답을
+   그대로 써서 카드마다 별도 상세 API를 호출하지 않는다. */
+.product-result-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product-result-card__countdown {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
+.product-result-card__countdown--urgent {
+  color: var(--color-danger);
+  animation: product-result-card-blink 1s ease-in-out infinite;
+}
+
+.product-result-card__countdown--expired {
+  color: var(--color-text-muted);
+  animation: none;
+}
+
+@keyframes product-result-card-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.product-result-card__stock {
+  color: var(--color-text-muted);
+}
+
 .product-result-card__actions {
   display: flex;
   gap: 6px;

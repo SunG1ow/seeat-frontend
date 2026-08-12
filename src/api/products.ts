@@ -3,6 +3,9 @@ import { extractErrorMessage, type ApiResult } from './result'
 
 // GET /api/v1/products/search 응답 항목 구조 (스웨거 명세 기준).
 // 목록(Home/Search)과 상세(Detail) 화면이 공통으로 쓰는 상품 필드.
+// ⚠️ auctionDeadline·stockQuantity는 2026-08-12 실 API 재확인 기준으로 새로 추가됨(과거엔
+// 목록 응답에 없어서 상세를 따로 호출해야 했다). auctionDeadline은 상세(ApiProductDetail)와
+// 마찬가지로 타임존 표기가 없는 LocalDateTime 문자열("YYYY-MM-DDTHH:mm:ss")로 내려온다.
 export interface ApiProduct {
   productId: number
   name: string
@@ -12,6 +15,8 @@ export interface ApiProduct {
   weightUnit: string
   tags: string[]
   thumbnailUrl: string
+  auctionDeadline: string | null
+  stockQuantity: number
 }
 
 interface ProductSearchResponse {

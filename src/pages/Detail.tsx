@@ -5,6 +5,7 @@ import { addCartItem } from '../api/cart'
 import { getMyAddresses } from '../api/addresses'
 import { createOrder, payOrder } from '../api/orders'
 import { useCart } from '../context/CartContext'
+import { useCountdown } from '../hooks/useCountdown'
 import './Detail.css'
 
 const MANDATORY_BLOCK_MESSAGE = '수협 의무위판 대상 어종으로 직거래가 불가합니다'
@@ -32,6 +33,11 @@ function Detail() {
   const [toast, setToast] = useState<string | null>(null)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [isPurchasing, setIsPurchasing] = useState(false)
+
+  // product가 아직 없을 때(로딩/에러 중)는 auctionDeadline이 undefined로 들어가고
+  // useCountdown은 그 경우 "마감" 상태를 돌려준다 — 어차피 이 값은 로딩/에러 화면에서는
+  // 쓰지 않지만, 훅 규칙상 조건부 return(아래) 이전에 호출해야 해서 여기 둔다.
+  const countdown = useCountdown(product?.auctionDeadline)
 
   // GET /api/v1/products/{productId} — 상세 화면 진입/id 변경 시 조회
   useEffect(() => {
@@ -274,6 +280,21 @@ function Detail() {
               <div className="detail__stat-value mono">
                 {product.stockQuantity}
                 {product.weightUnit} 남음
+              </div>
+            </div>
+            <div className="detail__stat-item">
+              <div className="detail__stat-label fs-caption">마감까지</div>
+              <div
+                className={
+                  'detail__big-timer' +
+                  (countdown.isExpired
+                    ? ' detail__big-timer--expired'
+                    : countdown.isUrgent
+                      ? ' detail__big-timer--urgent'
+                      : '')
+                }
+              >
+                {countdown.label}
               </div>
             </div>
           </div>
