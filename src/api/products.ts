@@ -366,10 +366,12 @@ export async function getCategories(signal?: AbortSignal): Promise<ApiResult<Api
 
 // ============================================================
 // GET /api/v1/seller/products — 판매자 상품 관리(ProductManagement) 화면용 내 상품 목록 조회
-// (2026-08-10 스웨거 확인). 로그인한 판매자는 Authorization 헤더(JWT)로 서버가 식별하므로
+// (2026-08-11 실 API 재확인) 로그인한 판매자는 Authorization 헤더(JWT)로 서버가 식별하므로
 // 별도 sellerId 파라미터는 필요 없다.
-// ⚠️ 다른 목록 API(products/search, users/me/orders)와 같은 계열로, success/data 래퍼 없이
-// Spring Data Page 형태({content, totalPages, totalElements, size, number})가 최상단에 바로 온다.
+// ⚠️ success/data 래퍼는 없지만, products/search·users/me/delivery와 동일하게 totalPages/
+// totalElements가 최상단이 아니라 page 객체 안에 중첩되어 온다({content, page: {number, size,
+// totalElements, totalPages}}). 예전엔 최상단 flat 필드로 잘못 알려져 있었고, 그 탓에 목록은
+// 정상 표시되면서 "등록 상품 수"(totalElements)만 항상 0으로 보이는 버그가 있었다.
 // ============================================================
 
 export interface SellerProductListItem {
@@ -383,10 +385,12 @@ export interface SellerProductListItem {
 
 interface SellerProductPageResponse {
   content: SellerProductListItem[]
-  totalPages: number
-  totalElements: number
-  size: number
-  number: number
+  page: {
+    number: number
+    size: number
+    totalElements: number
+    totalPages: number
+  }
 }
 
 export interface GetSellerProductsParams {
@@ -417,10 +421,10 @@ export async function getSellerProducts(
       ok: true,
       data: {
         content: response.data?.content ?? [],
-        totalPages: response.data?.totalPages ?? 0,
-        totalElements: response.data?.totalElements ?? 0,
-        size: response.data?.size ?? params.size ?? 10,
-        number: response.data?.number ?? params.page ?? 0,
+        totalPages: response.data?.page?.totalPages ?? 0,
+        totalElements: response.data?.page?.totalElements ?? 0,
+        size: response.data?.page?.size ?? params.size ?? 10,
+        number: response.data?.page?.number ?? params.page ?? 0,
       },
     }
   } catch (error) {
