@@ -51,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser)
       },
       logout: () => {
+        // 메모리 상태(user)만 지우면 localStorage의 accessToken/refreshToken이 그대로 남아
+        // api client 인터셉터가 계속 붙여 보낸다 — 로그아웃 후에도 무효(또는 만료된) 토큰으로
+        // 요청이 나가 예상 못한 401을 계속 겪게 되므로 여기서 함께 지운다.
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userId')
         setUser(null)
       },
       updateProfile: (patch) => {

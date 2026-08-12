@@ -22,7 +22,11 @@ function Detail() {
   const [product, setProduct] = useState<ApiProductDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [isAuthError, setIsAuthError] = useState(false)
   const [notFound, setNotFound] = useState(false)
+  // "다시 시도" 버튼이 navigate(0)(전체 새로고침)을 쓰지 않도록, 이 값을 증가시켜
+  // 아래 useEffect를 다시 실행시킨다 — SPA 라우팅을 벗어나지 않는 순수 재조회.
+  const [retryTick, setRetryTick] = useState(0)
 
   const [qty, setQty] = useState(1)
   const [toast, setToast] = useState<string | null>(null)
@@ -42,6 +46,7 @@ function Detail() {
     async function fetchDetail() {
       setIsLoading(true)
       setLoadError(null)
+      setIsAuthError(false)
       setNotFound(false)
       try {
         const detail = await getProductDetail(productId, controller.signal)
@@ -53,6 +58,12 @@ function Detail() {
         if (status === 404) {
           setNotFound(true)
         } else if (status === 401) {
+          // 서버가 거부한 토큰은 이미 만료/무효한 것이 확실하므로 로컬에 남겨두지 않는다.
+          // 지우지 않으면 이후의 모든 인증 요청이 같은 무효 토큰으로 계속 401을 반복한다.
+          localStorage.removeItem('accessToken')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('userId')
+          setIsAuthError(true)
           setLoadError('로그인 정보를 확인할 수 없습니다. 다시 로그인해주세요.')
         } else {
           setLoadError('상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
@@ -64,7 +75,7 @@ function Detail() {
 
     fetchDetail()
     return () => controller.abort()
-  }, [productId])
+  }, [productId, retryTick])
 
   function flashToast(message: string) {
     setToast(message)
@@ -107,9 +118,20 @@ function Detail() {
     return (
       <div className="detail__status detail__status--error fs-body2">
         {loadError ?? '상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'}
-        <button type="button" onClick={() => navigate(0)}>
-          다시 시도
-        </button>
+        {isAuthError ? (
+          // 401은 페이지를 새로고침한다고 없어지지 않으므로(토큰 자체가 무효) 로그인 화면으로
+          // 안내한다. 사용자가 직접 누르는 명시적 이동이라 렌더링 중 자동 리다이렉트가 아니고,
+          // 다른 페이지의 라우팅과 충돌하지 않는다.
+          <button type="button" onClick={() => navigate('/login', { state: { from: `/product/${id}` } })}>
+            로그인 하러 가기
+          </button>
+        ) : (
+          // 전체 새로고침(navigate(0))은 쓰지 않는다 — SPA 라우팅을 벗어나면 배포 환경의
+          // rewrite 설정에 좌우되고 불필요하게 앱 전체를 다시 로드한다. 재조회만 다시 트리거한다.
+          <button type="button" onClick={() => setRetryTick((tick) => tick + 1)}>
+            다시 시도
+          </button>
+        )}
       </div>
     )
   }
