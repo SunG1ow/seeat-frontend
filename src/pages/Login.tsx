@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth, type AuthUser, type UserRole } from '../context/AuthContext'
 import { api } from '../api/client'
 import './Login.css'
@@ -53,6 +53,10 @@ function Login() {
   const [activeTab, setActiveTab] = useState<UserRole>('buyer')
   const { login } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // 인증 만료(401)로 상세 페이지 등에서 로그인 화면으로 넘어온 경우, 로그인 성공 후
+  // 원래 보던 페이지로 되돌아간다(Detail.tsx가 navigate('/login', { state: { from } })로 전달).
+  const redirectTo = (location.state as { from?: string } | null)?.from || '/'
 
   const [buyerEmail, setBuyerEmail] = useState('')
   const [buyerPassword, setBuyerPassword] = useState('')
@@ -112,7 +116,7 @@ function Login() {
 
       const user: AuthUser = { email, role: toUserRole(role, fallbackRole), userId, ...extra }
       login(user)
-      navigate('/')
+      navigate(redirectTo, { replace: true })
     } catch (error) {
       console.error('[login] 로그인 실패:', error)
       alert('아이디 또는 비밀번호가 올바르지 않습니다.')
